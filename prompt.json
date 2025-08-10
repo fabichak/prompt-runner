@@ -1,0 +1,288 @@
+{
+  "2": {
+    "inputs": {
+      "samples": [
+        "13",
+        0
+      ],
+      "vae": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "3": {
+    "inputs": {
+      "grain_intensity": 0.030000000000000006,
+      "saturation_mix": 0.30000000000000004,
+      "images": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "FastFilmGrain",
+    "_meta": {
+      "title": "🎞️ Fast Film Grain"
+    }
+  },
+  "11": {
+    "inputs": {
+      "text": "poorly drawn, bad anatomy, bad hands, bad eyes, missing fingers, extra fingers, ugly, deformed, disfigured, blurry, grainy, out of focus, low resolution, amateur, poorly lit, oversaturated, undersaturated, watermark, signature, text, writing, noise, artifacts",
+      "clip": [
+        "39",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "13": {
+    "inputs": {
+      "seed": 626125203407133,
+      "steps": 10,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "denoise": 1,
+      "model": [
+        "20",
+        0
+      ],
+      "positive": [
+        "23",
+        0
+      ],
+      "negative": [
+        "11",
+        0
+      ],
+      "latent_image": [
+        "43",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "14": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "15": {
+    "inputs": {
+      "filename_prefix": "wan-image/img",
+      "images": [
+        "2",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "20": {
+    "inputs": {
+      "shift": 1.0000000000000002,
+      "model": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "Shift"
+    }
+  },
+  "23": {
+    "inputs": {
+      "text": "OFA1M1, 1girl, looking at the camera in a selfie",
+      "clip": [
+        "39",
+        1
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "30": {
+    "inputs": {
+      "lora_name": "Wan2.1_T2V_14B_FusionX_LoRA.safetensors",
+      "strength_model": 0.9000000000000001,
+      "strength_clip": 1,
+      "model": [
+        "37",
+        0
+      ],
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "37": {
+    "inputs": {
+      "model_name": "wan2.1_t2v_14B_fp16.safetensors",
+      "weight_dtype": "fp16",
+      "compute_dtype": "default",
+      "patch_cublaslinear": false,
+      "sage_attention": "auto",
+      "enable_fp16_accumulation": true
+    },
+    "class_type": "DiffusionModelLoaderKJ",
+    "_meta": {
+      "title": "Diffusion Model Loader KJ"
+    }
+  },
+  "38": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp16.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "39": {
+    "inputs": {
+      "lora_name": "OFA1M1-wan-e09.safetensors",
+      "strength_model": 1,
+      "strength_clip": 1,
+      "model": [
+        "53",
+        0
+      ],
+      "clip": [
+        "53",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "40": {
+    "inputs": {
+      "width": 720,
+      "height": 1272,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "43": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "scale_by": 1.0000000000000002,
+      "samples": [
+        "40",
+        0
+      ]
+    },
+    "class_type": "LatentUpscaleBy",
+    "_meta": {
+      "title": "Upscale Latent By"
+    }
+  },
+  "48": {
+    "inputs": {
+      "mode": "Auto",
+      "frames_per_batch": 16,
+      "use_gpu": true,
+      "ai_analysis": true,
+      "preset": "Natural",
+      "effect_strength": 1,
+      "enhancement_strength": 0.30000000000000004,
+      "adjust_for_skin_tone": true,
+      "white_balance_strength": 0.6000000000000001,
+      "warmth": 0,
+      "vibrancy": 0,
+      "brightness": 0,
+      "contrast": 0,
+      "tint": 0,
+      "lift": 0,
+      "gamma": 0,
+      "gain": 0,
+      "noise": 0,
+      "extract_palette": false,
+      "reference_strength": 0,
+      "🎬 Batch Progress": {
+        "currentBatch": 0,
+        "totalBatches": 0,
+        "totalFrames": 0,
+        "isProcessing": false
+      },
+      "🎞️ Frame Preview": {
+        "frames": [],
+        "currentFrame": 0,
+        "isPlaying": false,
+        "frameRate": 4,
+        "lastUpdate": 0
+      },
+      "images": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "BatchColorCorrection",
+    "_meta": {
+      "title": "Batch Color Corrector (beta)"
+    }
+  },
+  "49": {
+    "inputs": {
+      "filename_prefix": "wan-image/img-treated",
+      "images": [
+        "48",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "53": {
+    "inputs": {
+      "lora_name": "sh4rpn3ss_v2_e56.safetensors",
+      "strength_model": 0.7000000000000002,
+      "strength_clip": 1,
+      "model": [
+        "30",
+        0
+      ],
+      "clip": [
+        "30",
+        1
+      ]
+    },
+    "class_type": "LoraLoader",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  }
+}
