@@ -11,13 +11,12 @@ from datetime import datetime
 from models.job import RenderJob, CombineJob, JobType, JobStatus
 from models.job_result import JobResult
 from models.prompt_data import PromptData
-from services.comfyui_client import ComfyUIClient
-from services.workflow_manager import WorkflowManager
-from services.storage_utils import StorageManager
+from services.service_factory import ServiceFactory
+from services.dry_run_manager import is_dry_run
 from utils.job_planner import JobPlanner
 from config import (
     NODE_VIDEO_OUTPUT, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
-    RETRY_DELAY, JSON_WORKFLOW_FILE, COMBINE_WORKFLOW_FILE
+    RETRY_DELAY, JSON_WORKFLOW_FILE, COMBINE_WORKFLOW_FILE, SERVER_ADDRESS
 )
 
 logger = logging.getLogger(__name__)
@@ -27,9 +26,9 @@ class JobOrchestrator:
     """Orchestrates execution of render and combine jobs"""
     
     def __init__(self):
-        self.comfyui_client = ComfyUIClient()
-        self.storage = StorageManager()
-        self.workflow_manager = WorkflowManager(
+        self.comfyui_client = ServiceFactory.create_comfyui_client(SERVER_ADDRESS)
+        self.storage = ServiceFactory.create_storage_manager()
+        self.workflow_manager = ServiceFactory.create_workflow_manager(
             Path(JSON_WORKFLOW_FILE),
             Path(COMBINE_WORKFLOW_FILE)
         )
@@ -301,6 +300,20 @@ class JobOrchestrator:
             
             # Get reference image path
             ref_path = self.storage.get_reference_path(job.video_name, job.job_number)
+            
+            # Handle dry-run mode
+            if is_dry_run():
+                # Simulate ffmpeg extraction
+                ref_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(ref_path, 'w') as f:
+                    f.write(f"# DRY-RUN SIMULATED REFERENCE IMAGE\n")
+                    f.write(f"# Extracted from: {video_path}\n")
+                    f.write(f"# Frame number: {frame_num}\n")
+                    f.write(f"# Job: {job.job_number}\n")
+                    f.write(f"# Created at: {datetime.now().isoformat()}\n")
+                
+                logger.info(f"🖼️ [DRY-RUN] Simulated extracting reference frame {frame_num} to {ref_path}")
+                return True
             
             # Use ffmpeg to extract frame
             cmd = [

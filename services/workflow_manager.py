@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Dict, Any, Optional, List
 
 from models.job import RenderJob, CombineJob, JobType
+from services.dry_run_manager import is_dry_run, dry_run_manager
 from config import (
     HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL,
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
@@ -98,6 +99,29 @@ class WorkflowManager:
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
         logger.info(f"Modified workflow for HIGH job #{job.job_number}")
+        
+        # Save workflow in dry-run mode
+        if is_dry_run():
+            job_info = {
+                "type": "high_noise_render",
+                "job_id": job.job_id,
+                "job_number": job.job_number,
+                "video_name": job.video_name,
+                "frames_to_render": job.frames_to_render,
+                "start_frame": job.start_frame,
+                "lora_model": HIGH_LORA,
+                "noise_model": HIGH_MODEL,
+                "has_reference_image": job.reference_image_path is not None,
+                "reference_image_path": job.reference_image_path,
+                "modifications": [
+                    f"LoRA: {HIGH_LORA}",
+                    f"Model: {HIGH_MODEL}",
+                    f"Frames: {job.frames_to_render}",
+                    f"Start: {job.start_frame}"
+                ]
+            }
+            dry_run_manager.save_workflow(workflow, job_info)
+        
         return workflow
     
     def modify_for_low_job(self, job: RenderJob) -> Dict[str, Any]:
@@ -156,6 +180,29 @@ class WorkflowManager:
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
         logger.info(f"Modified workflow for LOW job #{job.job_number}")
+        
+        # Save workflow in dry-run mode
+        if is_dry_run():
+            job_info = {
+                "type": "low_noise_render",
+                "job_id": job.job_id,
+                "job_number": job.job_number,
+                "video_name": job.video_name,
+                "frames_to_render": job.frames_to_render,
+                "start_frame": job.start_frame,
+                "lora_model": LOW_LORA,
+                "noise_model": LOW_MODEL,
+                "latent_input_path": job.latent_input_path,
+                "modifications": [
+                    f"LoRA: {LOW_LORA}",
+                    f"Model: {LOW_MODEL}",
+                    f"Frames: {job.frames_to_render}",
+                    f"Start: {job.start_frame}",
+                    f"Latent input: {job.latent_input_path}"
+                ]
+            }
+            dry_run_manager.save_workflow(workflow, job_info)
+        
         return workflow
     
     def create_combine_workflow(self, combine_job: CombineJob) -> Dict[str, Any]:
@@ -197,6 +244,26 @@ class WorkflowManager:
         self._set_output_path(workflow, combine_job.output_path)
         
         logger.info(f"Created combine workflow for job #{combine_job.combine_number}")
+        
+        # Save workflow in dry-run mode
+        if is_dry_run():
+            job_info = {
+                "type": "combine",
+                "job_id": combine_job.job_id,
+                "combine_number": combine_job.combine_number,
+                "video_name": combine_job.video_name,
+                "input_video_path": combine_job.input_video_path,
+                "previous_combined_path": combine_job.previous_combined_path,
+                "output_path": combine_job.output_path,
+                "is_first_combine": combine_job.combine_number == 1,
+                "modifications": [
+                    f"Input: {Path(combine_job.input_video_path).name}",
+                    f"Output: {Path(combine_job.output_path).name}",
+                    f"Previous: {Path(combine_job.previous_combined_path).name if combine_job.previous_combined_path else 'None'}"
+                ]
+            }
+            dry_run_manager.save_workflow(workflow, job_info)
+        
         return workflow
     
     def _set_prompts(self, workflow: Dict[str, Any], positive: str, negative: str):

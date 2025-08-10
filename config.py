@@ -14,7 +14,23 @@ COMBINE_WORKFLOW_FILE = "combine.json"
 
 # Directory Configuration
 INPUT_PROMPT_DIR = "prompt_files"
-BASE_OUTPUT_DIR = Path("/workspace/ComfyUI/output/prompt-runner")
+
+# Try /workspace first, fallback to local directory for testing
+try:
+    _test_workspace = Path("/workspace")
+    if _test_workspace.exists() and _test_workspace.is_dir():
+        # Check if we can write to workspace
+        _test_file = _test_workspace / "test_write"
+        try:
+            _test_file.touch()
+            _test_file.unlink()
+            BASE_OUTPUT_DIR = Path("/workspace/ComfyUI/output/prompt-runner")
+        except (PermissionError, OSError):
+            BASE_OUTPUT_DIR = Path("output/prompt-runner")
+    else:
+        BASE_OUTPUT_DIR = Path("output/prompt-runner")
+except Exception:
+    BASE_OUTPUT_DIR = Path("output/prompt-runner")
 LATENTS_DIR = BASE_OUTPUT_DIR / "latents"
 VIDEOS_DIR = BASE_OUTPUT_DIR / "videos"
 REFERENCES_DIR = BASE_OUTPUT_DIR / "references"

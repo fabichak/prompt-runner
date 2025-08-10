@@ -17,8 +17,8 @@ config.CLIENT_ID = str(uuid.uuid4())
 
 from models.prompt_data import PromptData
 from services.job_orchestrator import JobOrchestrator
-from services.storage_utils import StorageManager
-from services.runpod_utils import RunPodManager
+from services.service_factory import ServiceFactory
+from services.dry_run_manager import enable_dry_run, dry_run_manager
 from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
 
@@ -151,7 +151,6 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
     logger.info("=" * 80)
     logger.info(f"PROCESSING: {prompt_data.video_name}")
     logger.info(f"Total frames: {prompt_data.total_frames}")
-    logger.info(f"Frames per chunk: {args.frames_per_chunk}")
     logger.info("=" * 80)
     
     # Update frames per chunk if specified
@@ -159,12 +158,28 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         config.FRAMES_TO_RENDER = args.frames_per_chunk
         orchestrator.job_planner.frames_per_chunk = args.frames_per_chunk
     
+    logger.info(f"Frames per chunk: {config.FRAMES_TO_RENDER}")
+
     # Plan jobs
     planner = JobPlanner(frames_per_chunk=args.frames_per_chunk)
-    render_jobs, combine_jobs = planner.calculate_job_sequence(prompt_data)
     
     if args.dry_run:
-        logger.info("DRY RUN - Jobs planned but not executed")
+        render_jobs, combine_jobs = planner.calculate_job_sequence(prompt_data)
+        
+        # Save job plans to temp folder
+        dry_run_manager.save_job_plan("render", render_jobs, {
+            "video_name": prompt_data.video_name,
+            "total_frames": prompt_data.total_frames,
+            "frames_per_chunk": args.frames_per_chunk
+        })
+        
+        dry_run_manager.save_job_plan("combine", combine_jobs, {
+            "video_name": prompt_data.video_name,
+            "total_combines": len(combine_jobs)
+        })
+        
+        logger.info("🎭 DRY RUN - Jobs planned but not executed")
+        logger.info(f"📊 Render jobs: {len(render_jobs)}, Combine jobs: {len(combine_jobs)}")
         return True
     
     # Execute pipeline
@@ -178,7 +193,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         
         # Upload to GCS if requested
         if not args.no_upload:
-            storage = StorageManager()
+            storage = ServiceFactory.create_storage_manager()
             upload_success = storage.zip_and_upload_output(prompt_data.video_name)
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
@@ -187,7 +202,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         
         # Clean up if requested
         if not args.keep_intermediate:
-            storage = StorageManager()
+            storage = ServiceFactory.create_storage_manager()
             storage.cleanup_intermediate_files(prompt_data.video_name, keep_final=True)
             logger.info("Cleaned up intermediate files")
     else:
@@ -207,8 +222,13 @@ def main():
     logger.info(f"Client ID: {config.CLIENT_ID}")
     logger.info("=" * 80)
     
+    # Enable dry-run mode if requested
+    if args.dry_run:
+        enable_dry_run()
+        logger.info("🎭 DRY-RUN MODE ENABLED")
+    
     # Show RunPod info if available
-    runpod = RunPodManager()
+    runpod = ServiceFactory.create_runpod_manager()
     runpod_info = runpod.get_instance_info()
     if runpod_info['pod_id'] != 'N/A':
         logger.info(f"RunPod Instance: {runpod_info}")
@@ -218,11 +238,11 @@ def main():
         logger.warning("System health check failed - continuing anyway")
     
     # Set up storage
-    storage = StorageManager()
+    storage = ServiceFactory.create_storage_manager()
     storage.ensure_directories()
     
     # Check disk space
-    if not storage.check_disk_space(required_gb=20.0):
+    if not storage.check_disk_space(required_gb=10.0):
         logger.error("Insufficient disk space")
         sys.exit(1)
     
@@ -293,6 +313,23 @@ def main():
     # Show disk usage
     disk_usage = storage.get_disk_usage()
     logger.info(f"Disk usage: {disk_usage}")
+    
+    # Show dry-run summary if applicable
+    if args.dry_run:
+        summary = dry_run_manager.get_summary()
+        logger.info("=" * 80)
+        logger.info("DRY-RUN SUMMARY")
+        logger.info("=" * 80)
+        logger.info(f"🗂️ Temp directory: {summary.get('temp_directory', 'N/A')}")
+        logger.info(f"📄 Workflows generated: {summary.get('workflows_generated', 0)}")
+        
+        if hasattr(storage, 'get_simulation_summary'):
+            sim_summary = storage.get_simulation_summary()
+            logger.info(f"☁️ Simulated GCS uploads: {sim_summary.get('total_uploads', 0)}")
+            logger.info(f"📁 Simulated file copies: {sim_summary.get('total_copies', 0)}")
+        
+        logger.info("=" * 80)
+        dry_run_manager.cleanup()
     
     # Handle RunPod shutdown
     if args.force_shutdown:

@@ -1,5 +1,6 @@
 """ComfyUI WebSocket client for communication"""
 import websocket
+from websocket import create_connection
 import json
 import urllib.request
 import urllib.parse
@@ -25,11 +26,13 @@ class ComfyUIClient:
         """Establish WebSocket connection"""
         try:
             ws_url = f"ws://{self.server_address}/ws?clientId={self.client_id}"
-            self.ws = websocket.create_connection(ws_url)
+            # Use create_connection with timeout for RunPod environment stability
+            self.ws = create_connection(ws_url, timeout=30)
             logger.info(f"Connected to ComfyUI server at {self.server_address}")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to ComfyUI: {e}")
+            logger.error(f"WebSocket URL: {ws_url}")
             return False
     
     def disconnect(self):
@@ -105,6 +108,9 @@ class ComfyUIClient:
                             
             except websocket.WebSocketTimeoutException:
                 continue
+            except websocket.WebSocketConnectionClosedException:
+                logger.error(f"WebSocket connection closed unexpectedly")
+                return False, "Connection closed"
             except Exception as e:
                 logger.error(f"Error receiving message: {e}")
                 return False, str(e)
