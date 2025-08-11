@@ -93,7 +93,7 @@ class JobOrchestrator:
             
             if not all(r.success for r in render_results):
                 logger.error("Some render jobs failed")
-                self.save_state(promptName, prompt_data.video_name)
+                self.save_state()
                 return False
             
             # Execute combine jobs
@@ -105,19 +105,19 @@ class JobOrchestrator:
             
             if not all(r.success for r in combine_results):
                 logger.error("Some combine jobs failed")
-                self.save_state(promptName, prompt_data.video_name)
+                self.save_state()
                 return False
             
             # Create final output
-            final_success = self.create_final_output(prompt_data.video_name, combine_jobs)
+            final_success = self.create_final_output(combine_jobs)
             
             if final_success:
                 # Clean up intermediate files
                 logger.info("Cleaning up intermediate files...")
-                self.storage.cleanup_intermediate_files(promptName, prompt_data.video_name, keep_final=True)
+                self.storage.cleanup_intermediate_files(promptName, keep_final=True)
                 
                 # Clear saved state
-                self.storage.clear_state(promptName, prompt_data.video_name)
+                self.storage.clear_state(promptName, self.current_prompt_name)
                 
                 logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
                 return True
@@ -127,7 +127,7 @@ class JobOrchestrator:
                 
         except Exception as e:
             logger.error(f"Pipeline execution error: {e}")
-            self.save_state(promptName, prompt_data.video_name)
+            self.save_state()
             return False
         finally:
             self.comfyui_client.disconnect()
@@ -168,7 +168,7 @@ class JobOrchestrator:
                 job.status = JobStatus.FAILED
                 
                 # Save state on failure
-                self.save_state(prompt_data.video_name)
+                self.save_state()
                 
                 if job.retry_count >= MAX_RETRIES:
                     logger.error(f"Job {job.job_number} failed after {MAX_RETRIES} retries")
@@ -274,7 +274,7 @@ class JobOrchestrator:
                 time.sleep(2)
                 
                 # Copy combined output
-                combined_path = self.storage.get_combined_path(self.current_prompt_name, job.video_name, job.combine_number)
+                combined_path = self.storage.get_combined_path(self.current_prompt_name, job.combine_number)
                 comfyui_output = Path(f"/workspace/ComfyUI/output/combined_{prompt_id}.mp4")
                 
                 if self.storage.copy_from_comfyui_output(comfyui_output, combined_path):
@@ -316,7 +316,7 @@ class JobOrchestrator:
             frame_num = max(1, job.frames_to_render - REFERENCE_FRAME_OFFSET)
             
             # Get reference image path
-            ref_path = self.storage.get_reference_path(self.current_prompt_name, job.video_name, job.job_number)
+            ref_path = self.storage.get_reference_path(self.current_prompt_name, job.job_number)
             
             # Handle dry-run mode
             if is_dry_run():
@@ -355,7 +355,7 @@ class JobOrchestrator:
             logger.error(f"Error extracting reference image: {e}")
             return False
     
-    def create_final_output(self, video_name: str, combine_jobs: List[CombineJob]) -> bool:
+    def create_final_output(self, combine_jobs: List[CombineJob]) -> bool:
         """Create final output video from last combined video"""
         try:
             if not combine_jobs:
@@ -374,7 +374,7 @@ class JobOrchestrator:
                     return False
             
             # Copy to final output
-            final_path = self.storage.get_final_path(self.current_prompt_name, video_name)
+            final_path = self.storage.get_final_path(self.current_prompt_name)
             shutil.copy2(last_combined_path, final_path)
             
             logger.info(f"Created final output: {final_path}")
@@ -384,15 +384,15 @@ class JobOrchestrator:
             logger.error(f"Error creating final output: {e}")
             return False
     
-    def save_state(self, video_name: str):
+    def save_state(self):
         """Save current execution state for recovery"""
         state = {
-            'video_name': video_name,
+            'prompt_name': self.current_prompt_name,
             'completed_jobs': self.completed_jobs,
             'failed_jobs': self.failed_jobs,
             'timestamp': datetime.now().isoformat()
         }
-        self.storage.save_state(self.current_prompt_name, video_name, state)
+        self.storage.save_state(self.current_prompt_name, state)
     
     def restore_state(self, state: Dict[str, Any]):
         """Restore execution state from saved data"""

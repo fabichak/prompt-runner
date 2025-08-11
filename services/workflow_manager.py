@@ -93,9 +93,11 @@ class WorkflowManager:
         
         #define folder to save latent
         if NODE_SAVE_LATENT in workflow:
-            workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_path
+            workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_dir_path
             workflow[NODE_SAVE_LATENT]["inputs"]["subfolder_name"] = ""
-            workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = "latent" + job.job_id
+            workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = f"job_{job.job_number:03d}.latent"
+            logger.debug(f"Set folder to save latent: {job.latent_dir_path}/job_{job.job_number:03d}.latent")
+
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
@@ -238,10 +240,7 @@ class WorkflowManager:
                 if "inputs" in workflow[COMBINE_NODE_IMAGE2]:
                     workflow[COMBINE_NODE_IMAGE2]["inputs"]["image_2"] = combine_job.previous_combined_path
                     logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
-        
-        # Set output path
-        self._set_output_path(workflow, combine_job.output_path)
-        
+                
         logger.info(f"Created combine workflow for job #{combine_job.combine_number}")
         
         # Save workflow in dry-run mode
@@ -273,49 +272,26 @@ class WorkflowManager:
             workflow[NODE_PROMPT]["inputs"]["negative_prompt"] = negative
             logger.debug(f"Set positive and negative prompt in node {NODE_PROMPT}")
     
-    def _set_output_path(self, workflow: Dict[str, Any], output_path: str):
-        """Set output path in workflow"""
-        # Find output nodes (typically SaveVideo, SaveImage, etc.)
-        for node_id, node in workflow.items():
-            if "class_type" in node:
-                class_type = node["class_type"]
-                if any(save_type in class_type for save_type in ["SaveVideo", "SaveImage", "VideoSave"]):
-                    if "inputs" in node:
-                        node["inputs"]["filename_prefix"] = Path(output_path).stem
-                        logger.debug(f"Set output path in node {node_id}: {output_path}")
-    
     def validate_workflow(self, workflow: Dict[str, Any]) -> bool:
         """Validate that a workflow has required nodes and structure"""
-        required_nodes = []  # Add any critical nodes that must exist
+        # required_nodes = []  # Add any critical nodes that must exist
         
-        for node_id in required_nodes:
-            if node_id not in workflow:
-                logger.error(f"Required node {node_id} not found in workflow")
-                return False
+        # for node_id in required_nodes:
+        #     if node_id not in workflow:
+        #         logger.error(f"Required node {node_id} not found in workflow")
+        #         return False
         
-        # Check for basic structure
-        if not workflow:
-            logger.error("Workflow is empty")
-            return False
+        # # Check for basic structure
+        # if not workflow:
+        #     logger.error("Workflow is empty")
+        #     return False
         
-        # Check that each node has required fields
-        for node_id, node in workflow.items():
-            if not isinstance(node, dict):
-                logger.error(f"Node {node_id} is not a dictionary")
-                return False
-            if "class_type" not in node:
-                logger.warning(f"Node {node_id} missing class_type")
+        # # Check that each node has required fields
+        # for node_id, node in workflow.items():
+        #     if not isinstance(node, dict):
+        #         logger.error(f"Node {node_id} is not a dictionary")
+        #         return False
+        #     if "class_type" not in node:
+        #         logger.warning(f"Node {node_id} missing class_type")
         
         return True
-    
-    def get_output_nodes(self, workflow: Dict[str, Any]) -> List[str]:
-        """Get list of output node IDs from workflow"""
-        output_nodes = []
-        
-        for node_id, node in workflow.items():
-            if "class_type" in node:
-                class_type = node["class_type"]
-                if any(save_type in class_type for save_type in ["SaveVideo", "SaveImage", "SaveLatent"]):
-                    output_nodes.append(node_id)
-        
-        return output_nodes

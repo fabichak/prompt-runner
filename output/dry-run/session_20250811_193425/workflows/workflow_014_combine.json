@@ -1,0 +1,204 @@
+{
+  "workflow_id": 14,
+  "timestamp": "2025-08-11T19:34:25.939167",
+  "job_info": {
+    "type": "combine",
+    "job_id": "8d5a092b-71ab-4cda-a323-015d263f963b",
+    "combine_number": 4,
+    "video_name": "2025-05-02_19-39-31_UTC",
+    "input_video_path": "output/prompt-runner/20250811_193425/videos/job_008.mp4",
+    "previous_combined_path": "output/prompt-runner/20250811_193425/combined/combined_003.mp4",
+    "output_path": "output/prompt-runner/20250811_193425/combined/combined_004.mp4",
+    "is_first_combine": false,
+    "modifications": [
+      "Input: job_008.mp4",
+      "Output: combined_004.mp4",
+      "Previous: combined_003.mp4"
+    ]
+  },
+  "workflow": {
+    "14": {
+      "inputs": {
+        "frame_rate": 30,
+        "loop_count": 0,
+        "filename_prefix": "test1/combinedvideo",
+        "format": "video/h264-mp4",
+        "pix_fmt": "yuv420p",
+        "crf": 0,
+        "save_metadata": false,
+        "trim_to_audio": false,
+        "pingpong": false,
+        "save_output": true,
+        "images": [
+          "30",
+          0
+        ]
+      },
+      "class_type": "VHS_VideoCombine",
+      "_meta": {
+        "title": "Video Combine \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62"
+      }
+    },
+    "25": {
+      "inputs": {
+        "video": "/workspace/ComfyUI/output/test1/test-01_00003.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff",
+        "videos": "output/prompt-runner/20250811_193425/videos/job_008.mp4"
+      },
+      "class_type": "VHS_LoadVideoPath",
+      "_meta": {
+        "title": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62"
+      }
+    },
+    "30": {
+      "inputs": {
+        "method": "lanczos",
+        "image_1": [
+          "40",
+          0
+        ],
+        "image_2": "output/prompt-runner/20250811_193425/combined/combined_003.mp4"
+      },
+      "class_type": "ImageBatchMultiple+",
+      "_meta": {
+        "title": "\ud83d\udd27 Images Batch Multiple"
+      }
+    },
+    "31": {
+      "inputs": {
+        "grain_intensity": 0.03,
+        "saturation_mix": 0.25,
+        "images": [
+          "35",
+          0
+        ]
+      },
+      "class_type": "FastFilmGrain",
+      "_meta": {
+        "title": "\ud83c\udf9e\ufe0f Fast Film Grain"
+      }
+    },
+    "32": {
+      "inputs": {
+        "mode": "Auto",
+        "frames_per_batch": 16,
+        "use_gpu": true,
+        "ai_analysis": true,
+        "preset": "Natural",
+        "effect_strength": 1,
+        "enhancement_strength": 0.30000000000000004,
+        "adjust_for_skin_tone": true,
+        "white_balance_strength": 0.8,
+        "warmth": 0,
+        "vibrancy": 0,
+        "brightness": 0,
+        "contrast": 0,
+        "tint": 0,
+        "lift": 0,
+        "gamma": 0,
+        "gain": 0,
+        "noise": 0,
+        "extract_palette": false,
+        "reference_strength": 0,
+        "\ud83c\udfac Batch Progress": {
+          "currentBatch": 0,
+          "totalBatches": 0,
+          "totalFrames": 0,
+          "isProcessing": false
+        },
+        "\ud83c\udf9e\ufe0f Frame Preview": {
+          "frames": [],
+          "currentFrame": 0,
+          "isPlaying": false,
+          "frameRate": 4,
+          "lastUpdate": 0
+        },
+        "images": [
+          "31",
+          0
+        ]
+      },
+      "class_type": "BatchColorCorrection",
+      "_meta": {
+        "title": "Batch Color Corrector (beta)"
+      }
+    },
+    "33": {
+      "inputs": {
+        "ckpt_name": "rife49.pth",
+        "clear_cache_after_n_frames": 10,
+        "multiplier": 2,
+        "fast_mode": true,
+        "ensemble": true,
+        "scale_factor": 1,
+        "frames": [
+          "32",
+          0
+        ]
+      },
+      "class_type": "RIFE VFI",
+      "_meta": {
+        "title": "RIFE VFI (recommend rife47 and rife49)"
+      }
+    },
+    "34": {
+      "inputs": {
+        "anything": [
+          "14",
+          0
+        ]
+      },
+      "class_type": "easy cleanGpuUsed",
+      "_meta": {
+        "title": "Clean VRAM Used"
+      }
+    },
+    "35": {
+      "inputs": {
+        "upscale_model": "RealESRGAN_x2plus.pth",
+        "mode": "rescale",
+        "rescale_factor": 2,
+        "resize_width": 1080,
+        "resampling_method": "lanczos",
+        "supersample": "true",
+        "rounding_modulus": 8,
+        "image": [
+          "25",
+          0
+        ]
+      },
+      "class_type": "CR Upscale Image",
+      "_meta": {
+        "title": "\ud83d\udd0d CR Upscale Image"
+      }
+    },
+    "40": {
+      "inputs": {
+        "video": "/workspace/ComfyUI/output/test1/combinedvideo_00002.mp4",
+        "force_rate": 0,
+        "custom_width": 0,
+        "custom_height": 0,
+        "frame_load_cap": 0,
+        "skip_first_frames": 0,
+        "select_every_nth": 1,
+        "format": "AnimateDiff"
+      },
+      "class_type": "VHS_LoadVideoPath",
+      "_meta": {
+        "title": "Load Video (Path) \ud83c\udfa5\ud83c\udd65\ud83c\udd57\ud83c\udd62"
+      }
+    }
+  },
+  "original_nodes_count": 9,
+  "modifications_applied": [
+    "Input: job_008.mp4",
+    "Output: combined_004.mp4",
+    "Previous: combined_003.mp4"
+  ]
+}

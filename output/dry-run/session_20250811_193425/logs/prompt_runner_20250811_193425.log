@@ -1,0 +1,168 @@
+2025-08-11 19:34:25,834 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:25,834 - __main__ - INFO - PROMPT RUNNER V2 - Starting
+2025-08-11 19:34:25,834 - __main__ - INFO - Client ID: 1082ea55-d643-42c9-b874-a916e3f6838b
+2025-08-11 19:34:25,834 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:25,835 - __main__ - INFO - 🎭 DRY-RUN MODE ENABLED
+2025-08-11 19:34:25,837 - services.service_factory - INFO - 🎭 Creating MockRunPodManager for dry-run mode
+2025-08-11 19:34:25,837 - services.mock_runpod_manager - INFO - ℹ️ [DRY-RUN] Simulated RunPod instance info: {'pod_id': 'dry-run-pod-12345', 'pod_hostname': 'dry-run-host.runpod.io', 'gpu_count': '1', 'cpu_count': '8', 'mem_gb': '32', 'public_ip': '203.0.113.1', 'api_key': 'SIMULATED'}
+2025-08-11 19:34:25,837 - __main__ - INFO - RunPod Instance: {'pod_id': 'dry-run-pod-12345', 'pod_hostname': 'dry-run-host.runpod.io', 'gpu_count': '1', 'cpu_count': '8', 'mem_gb': '32', 'public_ip': '203.0.113.1', 'api_key': 'SIMULATED'}
+2025-08-11 19:34:25,837 - services.mock_runpod_manager - INFO - 💓 [DRY-RUN] Simulated system health - CPU: 15.5%, RAM: 45.2%, Disk: 32.1%
+2025-08-11 19:34:25,841 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-11 19:34:25,841 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-11 19:34:25,842 - services.mock_storage_manager - INFO - 💽 [DRY-RUN] Disk space check for prompt '_global_check': 276.4GB available
+2025-08-11 19:34:25,845 - utils.file_parser - INFO - Successfully parsed prompt file: PromptData(video=2025-05-02_19-39-31_UTC, frames=500)
+2025-08-11 19:34:25,845 - utils.file_parser - INFO - Found 1 valid prompt files
+2025-08-11 19:34:25,845 - __main__ - INFO - Found 1 prompt file(s) to process
+2025-08-11 19:34:25,847 - services.service_factory - INFO - 🎭 Creating MockComfyUIClient for dry-run mode
+2025-08-11 19:34:25,848 - services.mock_comfyui_client - INFO - 🎭 MockComfyUIClient initialized for 127.0.0.1:8188
+2025-08-11 19:34:25,848 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-11 19:34:25,848 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-11 19:34:25,848 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-11 19:34:25,848 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-11 19:34:25,849 - services.workflow_manager - INFO - Loaded workflow from prompt.json
+2025-08-11 19:34:25,850 - services.workflow_manager - INFO - Loaded workflow from combine.json
+2025-08-11 19:34:25,850 - __main__ - INFO - 
+Processing: prompt_files/1.txt
+2025-08-11 19:34:25,850 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:25,850 - __main__ - INFO - NAME: 20250811_193425
+2025-08-11 19:34:25,851 - __main__ - INFO - PROCESSING: 2025-05-02_19-39-31_UTC
+2025-08-11 19:34:25,851 - __main__ - INFO - Total frames: 500
+2025-08-11 19:34:25,851 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:25,851 - __main__ - INFO - Frames per chunk: 101
+2025-08-11 19:34:25,851 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-11 19:34:25,851 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-11 19:34:25,851 - utils.job_planner - INFO - Planning 5 job pairs for 500 total frames (101 per chunk)
+2025-08-11 19:34:25,852 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425
+2025-08-11 19:34:25,853 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/latents
+2025-08-11 19:34:25,854 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/videos
+2025-08-11 19:34:25,855 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/references
+2025-08-11 19:34:25,857 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/combined
+2025-08-11 19:34:25,859 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/final
+2025-08-11 19:34:25,859 - services.mock_storage_manager - DEBUG - [DRY-RUN] Ensured directory exists: output/prompt-runner/20250811_193425/state
+2025-08-11 19:34:25,899 - utils.job_planner - INFO - ============================================================
+2025-08-11 19:34:25,899 - utils.job_planner - INFO - JOB EXECUTION PLAN
+2025-08-11 19:34:25,899 - utils.job_planner - INFO - ============================================================
+2025-08-11 19:34:25,900 - utils.job_planner - INFO - Total render jobs: 10
+2025-08-11 19:34:25,900 - utils.job_planner - INFO - Total combine jobs: 5
+2025-08-11 19:34:25,900 - utils.job_planner - INFO -   RenderJob(HIGH #1, frames 0-101) [ref: output/prompt-runner/20250811_193425/references/job_000_ref.png]
+2025-08-11 19:34:25,900 - utils.job_planner - INFO -   RenderJob(LOW #2, frames 0-101) [ref: output/prompt-runner/20250811_193425/references/job_000_ref.png]
+2025-08-11 19:34:25,900 - utils.job_planner - INFO -   RenderJob(HIGH #3, frames 101-202) [ref: output/prompt-runner/20250811_193425/references/job_002_ref.png]
+2025-08-11 19:34:25,900 - utils.job_planner - INFO -   RenderJob(LOW #4, frames 101-202) [ref: output/prompt-runner/20250811_193425/references/job_002_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(HIGH #5, frames 202-303) [ref: output/prompt-runner/20250811_193425/references/job_004_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(LOW #6, frames 202-303) [ref: output/prompt-runner/20250811_193425/references/job_004_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(HIGH #7, frames 303-404) [ref: output/prompt-runner/20250811_193425/references/job_006_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(LOW #8, frames 303-404) [ref: output/prompt-runner/20250811_193425/references/job_006_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(HIGH #9, frames 404-500) [ref: output/prompt-runner/20250811_193425/references/job_008_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   RenderJob(LOW #10, frames 404-500) [ref: output/prompt-runner/20250811_193425/references/job_008_ref.png]
+2025-08-11 19:34:25,901 - utils.job_planner - INFO - ----------------------------------------
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   CombineJob(#1 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250811_193425/videos/job_002.mp4 -> output/prompt-runner/20250811_193425/combined/combined_001.mp4
+2025-08-11 19:34:25,901 - utils.job_planner - INFO -   CombineJob(#2 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250811_193425/videos/job_004.mp4 + output/prompt-runner/20250811_193425/combined/combined_001.mp4 -> output/prompt-runner/20250811_193425/combined/combined_002.mp4
+2025-08-11 19:34:25,902 - utils.job_planner - INFO -   CombineJob(#3 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250811_193425/videos/job_006.mp4 + output/prompt-runner/20250811_193425/combined/combined_002.mp4 -> output/prompt-runner/20250811_193425/combined/combined_003.mp4
+2025-08-11 19:34:25,902 - utils.job_planner - INFO -   CombineJob(#4 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250811_193425/videos/job_008.mp4 + output/prompt-runner/20250811_193425/combined/combined_003.mp4 -> output/prompt-runner/20250811_193425/combined/combined_004.mp4
+2025-08-11 19:34:25,902 - utils.job_planner - INFO -   CombineJob(#5 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250811_193425/videos/job_010.mp4 + output/prompt-runner/20250811_193425/combined/combined_004.mp4 -> output/prompt-runner/20250811_193425/combined/combined_005.mp4
+2025-08-11 19:34:25,902 - utils.job_planner - INFO - ============================================================
+2025-08-11 19:34:25,908 - __main__ - INFO - 🔧 Generating workflows for dry-run analysis...
+2025-08-11 19:34:25,908 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-11 19:34:25,909 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-11 19:34:25,910 - services.workflow_manager - INFO - Loaded workflow from prompt.json
+2025-08-11 19:34:25,910 - services.workflow_manager - INFO - Loaded workflow from combine.json
+2025-08-11 19:34:25,911 - services.workflow_manager - DEBUG - Deleted reference images node for job 1
+2025-08-11 19:34:25,911 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,911 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,911 - services.workflow_manager - DEBUG - Set folder to save latent: output/prompt-runner/20250811_193425/latents/job_001.latent
+2025-08-11 19:34:25,911 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,911 - services.workflow_manager - INFO - Modified workflow for HIGH job #1
+2025-08-11 19:34:25,913 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_001_high_noise_render.json (high_noise_render job)
+2025-08-11 19:34:25,913 - services.workflow_manager - DEBUG - Deleted latent node 365 for LOW job
+2025-08-11 19:34:25,913 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,913 - services.workflow_manager - INFO - Modified workflow for LOW job #2
+2025-08-11 19:34:25,914 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_002_low_noise_render.json (low_noise_render job)
+2025-08-11 19:34:25,914 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_002_ref.png
+2025-08-11 19:34:25,915 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,915 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,915 - services.workflow_manager - DEBUG - Set folder to save latent: output/prompt-runner/20250811_193425/latents/job_003.latent
+2025-08-11 19:34:25,915 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,915 - services.workflow_manager - INFO - Modified workflow for HIGH job #3
+2025-08-11 19:34:25,917 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_003_high_noise_render.json (high_noise_render job)
+2025-08-11 19:34:25,917 - services.workflow_manager - DEBUG - Deleted latent node 365 for LOW job
+2025-08-11 19:34:25,917 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_002_ref.png
+2025-08-11 19:34:25,917 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,917 - services.workflow_manager - INFO - Modified workflow for LOW job #4
+2025-08-11 19:34:25,918 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_004_low_noise_render.json (low_noise_render job)
+2025-08-11 19:34:25,919 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_004_ref.png
+2025-08-11 19:34:25,919 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,919 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,919 - services.workflow_manager - DEBUG - Set folder to save latent: output/prompt-runner/20250811_193425/latents/job_005.latent
+2025-08-11 19:34:25,919 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,920 - services.workflow_manager - INFO - Modified workflow for HIGH job #5
+2025-08-11 19:34:25,921 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_005_high_noise_render.json (high_noise_render job)
+2025-08-11 19:34:25,921 - services.workflow_manager - DEBUG - Deleted latent node 365 for LOW job
+2025-08-11 19:34:25,921 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_004_ref.png
+2025-08-11 19:34:25,921 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,922 - services.workflow_manager - INFO - Modified workflow for LOW job #6
+2025-08-11 19:34:25,923 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_006_low_noise_render.json (low_noise_render job)
+2025-08-11 19:34:25,923 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_006_ref.png
+2025-08-11 19:34:25,923 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,923 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,923 - services.workflow_manager - DEBUG - Set folder to save latent: output/prompt-runner/20250811_193425/latents/job_007.latent
+2025-08-11 19:34:25,923 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,924 - services.workflow_manager - INFO - Modified workflow for HIGH job #7
+2025-08-11 19:34:25,926 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_007_high_noise_render.json (high_noise_render job)
+2025-08-11 19:34:25,926 - services.workflow_manager - DEBUG - Deleted latent node 365 for LOW job
+2025-08-11 19:34:25,926 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_006_ref.png
+2025-08-11 19:34:25,926 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,926 - services.workflow_manager - INFO - Modified workflow for LOW job #8
+2025-08-11 19:34:25,928 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_008_low_noise_render.json (low_noise_render job)
+2025-08-11 19:34:25,928 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_008_ref.png
+2025-08-11 19:34:25,928 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,928 - services.workflow_manager - DEBUG - Deleted samples node 54 for HIGH job
+2025-08-11 19:34:25,928 - services.workflow_manager - DEBUG - Set folder to save latent: output/prompt-runner/20250811_193425/latents/job_009.latent
+2025-08-11 19:34:25,928 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,929 - services.workflow_manager - INFO - Modified workflow for HIGH job #9
+2025-08-11 19:34:25,930 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_009_high_noise_render.json (high_noise_render job)
+2025-08-11 19:34:25,930 - services.workflow_manager - DEBUG - Deleted latent node 365 for LOW job
+2025-08-11 19:34:25,930 - services.workflow_manager - DEBUG - Set reference image: output/prompt-runner/20250811_193425/references/job_008_ref.png
+2025-08-11 19:34:25,930 - services.workflow_manager - DEBUG - Set positive and negative prompt in node 53
+2025-08-11 19:34:25,930 - services.workflow_manager - INFO - Modified workflow for LOW job #10
+2025-08-11 19:34:25,932 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_010_low_noise_render.json (low_noise_render job)
+2025-08-11 19:34:25,932 - services.workflow_manager - DEBUG - Set input video: output/prompt-runner/20250811_193425/videos/job_002.mp4
+2025-08-11 19:34:25,932 - services.workflow_manager - DEBUG - Removed image_2 node for first combine
+2025-08-11 19:34:25,932 - services.workflow_manager - DEBUG - Set images input to [33, 0] for first combine
+2025-08-11 19:34:25,932 - services.workflow_manager - INFO - Created combine workflow for job #1
+2025-08-11 19:34:25,933 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_011_combine.json (combine job)
+2025-08-11 19:34:25,933 - services.workflow_manager - DEBUG - Set input video: output/prompt-runner/20250811_193425/videos/job_004.mp4
+2025-08-11 19:34:25,933 - services.workflow_manager - DEBUG - Set previous combined: output/prompt-runner/20250811_193425/combined/combined_001.mp4
+2025-08-11 19:34:25,934 - services.workflow_manager - INFO - Created combine workflow for job #2
+2025-08-11 19:34:25,935 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_012_combine.json (combine job)
+2025-08-11 19:34:25,935 - services.workflow_manager - DEBUG - Set input video: output/prompt-runner/20250811_193425/videos/job_006.mp4
+2025-08-11 19:34:25,935 - services.workflow_manager - DEBUG - Set previous combined: output/prompt-runner/20250811_193425/combined/combined_002.mp4
+2025-08-11 19:34:25,936 - services.workflow_manager - INFO - Created combine workflow for job #3
+2025-08-11 19:34:25,938 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_013_combine.json (combine job)
+2025-08-11 19:34:25,938 - services.workflow_manager - DEBUG - Set input video: output/prompt-runner/20250811_193425/videos/job_008.mp4
+2025-08-11 19:34:25,938 - services.workflow_manager - DEBUG - Set previous combined: output/prompt-runner/20250811_193425/combined/combined_003.mp4
+2025-08-11 19:34:25,939 - services.workflow_manager - INFO - Created combine workflow for job #4
+2025-08-11 19:34:25,940 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_014_combine.json (combine job)
+2025-08-11 19:34:25,940 - services.workflow_manager - DEBUG - Set input video: output/prompt-runner/20250811_193425/videos/job_010.mp4
+2025-08-11 19:34:25,940 - services.workflow_manager - DEBUG - Set previous combined: output/prompt-runner/20250811_193425/combined/combined_004.mp4
+2025-08-11 19:34:25,940 - services.workflow_manager - INFO - Created combine workflow for job #5
+2025-08-11 19:34:25,943 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_015_combine.json (combine job)
+2025-08-11 19:34:25,943 - __main__ - INFO - 🎭 DRY RUN - Jobs planned but not executed
+2025-08-11 19:34:25,943 - __main__ - INFO - 📊 Render jobs: 10, Combine jobs: 5
+2025-08-11 19:34:25,943 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:25,944 - __main__ - INFO - PROMPT RUNNER V2 - Complete
+2025-08-11 19:34:25,944 - __main__ - INFO - Successful: 1
+2025-08-11 19:34:25,944 - __main__ - INFO - Failed: 0
+2025-08-11 19:34:25,944 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:26,000 - __main__ - INFO - Disk usage for last prompt: {'latents': 0.0, 'videos': 0.0, 'references': 0.0, 'combined': 0.0, 'final': 0.0, 'state': 0.0, 'total': 0.0, 'dry_run_temp': 0.00018790923058986664}
+2025-08-11 19:34:26,000 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:26,001 - __main__ - INFO - DRY-RUN SUMMARY
+2025-08-11 19:34:26,001 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:26,001 - __main__ - INFO - 🗂️ Temp directory: N/A
+2025-08-11 19:34:26,001 - __main__ - INFO - 📄 Workflows generated: 15
+2025-08-11 19:34:26,002 - __main__ - INFO - ☁️ Simulated GCS uploads: 0
+2025-08-11 19:34:26,002 - __main__ - INFO - 📁 Simulated file copies: 0
+2025-08-11 19:34:26,002 - __main__ - INFO - ================================================================================
+2025-08-11 19:34:26,002 - services.dry_run_manager - INFO - 🗂️ Dry-run files preserved at: output/dry-run/session_20250811_193425
+2025-08-11 19:34:26,002 - services.dry_run_manager - INFO - 📊 Session contained 15 workflows and 0 HTTP payloads
+2025-08-11 19:34:26,029 - services.dry_run_manager - INFO - 💾 Total dry-run output size: 0.19 MB
+2025-08-11 19:34:26,029 - __main__ - INFO - RunPod instance will remain running

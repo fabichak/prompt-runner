@@ -36,8 +36,8 @@ class StorageManager:
             directory.mkdir(parents=True, exist_ok=True)
             logger.debug(f"Ensured directory exists: {directory}")
     
-    def get_video_directory(self, promptName: str, video_name: str, dir_type: str) -> Path:
-        """Get directory path for a specific prompt, video and type"""
+    def get_directory(self, promptName: str, dir_type: str) -> Path:
+        """Get directory path for a specific prompt and type"""
         # Create prompt-specific base directory
         prompt_base = BASE_OUTPUT_DIR / promptName
         
@@ -55,35 +55,34 @@ class StorageManager:
         else:
             raise ValueError(f"Unknown directory type: {dir_type}")
         
-        # Add video-specific directory within the subfolder
-        video_dir = subfolder / video_name
-        video_dir.mkdir(parents=True, exist_ok=True)
-        return video_dir
+        # Ensure directory exists and return it
+        subfolder.mkdir(parents=True, exist_ok=True)
+        return subfolder
     
-    def get_latent_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_latent_path(self, promptName: str, job_number: int) -> Path:
         """Get path for latent file"""
-        dir_path = self.get_video_directory(promptName, video_name, "latents")
+        dir_path = self.get_directory(promptName, "latents")
         return dir_path / f"job_{job_number:03d}.latent"
     
-    def get_video_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_video_path(self, promptName: str, job_number: int) -> Path:
         """Get path for video file"""
-        dir_path = self.get_video_directory(promptName, video_name, "videos")
+        dir_path = self.get_directory(promptName, "videos")
         return dir_path / f"job_{job_number:03d}.mp4"
     
-    def get_reference_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_reference_path(self, promptName: str, job_number: int) -> Path:
         """Get path for reference image"""
-        dir_path = self.get_video_directory(promptName, video_name, "references")
+        dir_path = self.get_directory(promptName, "references")
         return dir_path / f"job_{job_number:03d}_ref.png"
     
-    def get_combined_path(self, promptName: str, video_name: str, stage: int) -> Path:
+    def get_combined_path(self, promptName: str, stage: int) -> Path:
         """Get path for combined video at a specific stage"""
-        dir_path = self.get_video_directory(promptName, video_name, "combined")
+        dir_path = self.get_directory(promptName, "combined")
         return dir_path / f"combined_{stage:03d}.mp4"
     
-    def get_final_path(self, promptName: str, video_name: str) -> Path:
+    def get_final_path(self, promptName: str) -> Path:
         """Get path for final output video"""
-        dir_path = self.get_video_directory(promptName, video_name, "final")
-        return dir_path / f"{video_name}_final.mp4"
+        dir_path = self.get_directory(promptName, "final")
+        return dir_path / f"{promptName}_final.mp4"
     
     def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):
         """Save job state for recovery"""
@@ -91,7 +90,7 @@ class StorageManager:
         state_dir = prompt_base / "state"
         state_dir.mkdir(parents=True, exist_ok=True)
         
-        state_file = state_dir / f"{state_name}.json"
+        state_file = state_dir / f"state.json"
         with open(state_file, 'w') as f:
             json.dump(data, f, indent=2, default=str)
         logger.info(f"Saved state to {state_file}")
@@ -99,7 +98,7 @@ class StorageManager:
     def load_state(self, promptName: str, state_name: str) -> Optional[Dict[str, Any]]:
         """Load job state for recovery"""
         prompt_base = BASE_OUTPUT_DIR / promptName
-        state_file = prompt_base / "state" / f"{state_name}.json"
+        state_file = prompt_base / "state" / f"state.json"
         if not state_file.exists():
             return None
         
@@ -120,13 +119,13 @@ class StorageManager:
             state_file.unlink()
             logger.info(f"Cleared state file {state_file}")
     
-    def cleanup_intermediate_files(self, promptName: str, video_name: str, keep_final: bool = True):
+    def cleanup_intermediate_files(self, promptName: str, keep_final: bool = True):
         """Clean up intermediate files after successful completion"""
         directories_to_clean = [
-            self.get_video_directory(promptName, video_name, "latents"),
-            self.get_video_directory(promptName, video_name, "videos"),
-            self.get_video_directory(promptName, video_name, "references"),
-            self.get_video_directory(promptName, video_name, "combined")
+            self.get_directory(promptName, "latents"),
+            self.get_directory(promptName, "videos"),
+            self.get_directory(promptName, "references"),
+            self.get_directory(promptName, "combined")
         ]
         
         for directory in directories_to_clean:
@@ -135,29 +134,14 @@ class StorageManager:
                 logger.info(f"Cleaned up {directory}")
         
         if not keep_final:
-            final_dir = self.get_video_directory(promptName, video_name, "final")
+            final_dir = self.get_directory(promptName, "final")
             if final_dir.exists():
                 shutil.rmtree(final_dir)
     
-    def copy_from_comfyui_output(self, source_path: Path, dest_path: Path) -> bool:
-        """Copy file from ComfyUI output to our directory structure"""
-        try:
-            if source_path.exists():
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(source_path, dest_path)
-                logger.debug(f"Copied {source_path} to {dest_path}")
-                return True
-            else:
-                logger.warning(f"Source file not found: {source_path}")
-                return False
-        except Exception as e:
-            logger.error(f"Error copying file: {e}")
-            return False
-    
-    def zip_and_upload_output(self, promptName: str, video_name: str) -> bool:
+    def zip_and_upload_output(self, promptName: str) -> bool:
         """Zip final output and upload to GCS"""
         try:
-            final_video = self.get_final_path(promptName, video_name)
+            final_video = self.get_final_path(promptName)
             if not final_video.exists():
                 logger.error(f"Final video not found: {final_video}")
                 return False
@@ -168,7 +152,7 @@ class StorageManager:
             final_dir.mkdir(parents=True, exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            zip_name = f"{video_name}_{timestamp}.zip"
+            zip_name = f"{promptName}_{timestamp}.zip"
             zip_path = final_dir / zip_name
             
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
@@ -234,4 +218,4 @@ class StorageManager:
             return True
         except Exception as e:
             logger.error(f"Error checking disk space for prompt '{promptName}': {e}")
-            return True  # Assume sufficient space on error  # Assume sufficient space on error
+            return True  # Assume sufficient space on error  # Assume sufficient space on error  # Assume sufficient space on error

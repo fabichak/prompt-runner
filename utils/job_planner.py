@@ -57,6 +57,7 @@ class JobPlanner:
                 video_name=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
+                latent_dir_path=self.storage.get_directory(self.promptName, "latents"),
                 latent_path=self.storage.get_latent_path(self.promptName, job_number),
                 reference_image_path= self.storage.get_reference_path(self.promptName, job_number-1) #from job-1 low output, not used in job=1
             )
@@ -97,7 +98,7 @@ class JobPlanner:
                     video_name=prompt_data.video_name,
                     input_video_path=job.video_output_path,
                     previous_combined_path=previous_combined_path,
-                    output_path=f"combined/{prompt_data.video_name}/combined_{combine_number:03d}.mp4"
+                    output_path=str(self.storage.get_combined_path(self.promptName, combine_number))
                 )
                 combine_jobs.append(combine_job)
                 

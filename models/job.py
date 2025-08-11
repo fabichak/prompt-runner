@@ -30,6 +30,7 @@ class RenderJob:
     prompt_name: str = ""  # Session identifier for organizing files
     
     # Input/output paths
+    latent_dir_path: Optional[str] = None
     latent_path: Optional[str] = None
     reference_image_path: Optional[str] = None
     video_output_path: Optional[str] = None
@@ -43,17 +44,7 @@ class RenderJob:
     positive_prompt: str = ""
     negative_prompt: str = ""
     
-    def __post_init__(self):
-        """Initialize paths after dataclass initialization"""
-        from services.service_factory import ServiceFactory
-        self.storage = ServiceFactory.create_storage_manager()
-        # Only set these paths if they're not already provided
-        if not self.reference_image_path:
-            self.reference_image_path = self.storage.get_video_directory(self.job_id, "references") 
-        if not self.latent_path:
-            self.latent_path = self.storage.get_video_directory(self.job_id, "latents") 
-        if not self.video_output_path:
-            self.video_output_path = self.storage.get_video_directory(self.job_id, "videos")
+    # Note: Paths are now set by calling code (JobPlanner) that knows the promptName and job details
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""

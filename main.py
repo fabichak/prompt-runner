@@ -62,7 +62,7 @@ Examples:
   python main.py --prompt-file my_prompt.txt
   
   # Resume from saved state
-  python main.py --resume video_name
+  python main.py --resume promptName
   
   # Keep RunPod instance running after completion
   python main.py --no-shutdown
@@ -89,8 +89,8 @@ Examples:
     parser.add_argument(
         "--resume",
         type=str,
-        metavar="VIDEO_NAME",
-        help="Resume from saved state for given video name"
+        metavar="PROMPT_NAME",
+        help="Resume from saved state for given prompt name"
     )
     parser.add_argument(
         "--frames-per-chunk",
@@ -232,7 +232,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Upload to GCS if requested
         if not args.no_upload:
             storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(promptName, prompt_data.video_name)
+            upload_success = storage.zip_and_upload_output(promptName)
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
             else:
@@ -241,7 +241,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Clean up if requested
         if not args.keep_intermediate:
             storage = ServiceFactory.create_storage_manager()
-            storage.cleanup_intermediate_files(promptName, prompt_data.video_name, keep_final=True)
+            storage.cleanup_intermediate_files(promptName, keep_final=True)
             logger.info("Cleaned up intermediate files")
     else:
         logger.error(f"❌ Failed to process {prompt_data.video_name}")

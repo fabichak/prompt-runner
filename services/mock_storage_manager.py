@@ -42,8 +42,8 @@ class MockStorageManager:
             directory.mkdir(parents=True, exist_ok=True)
             logger.debug(f"[DRY-RUN] Ensured directory exists: {directory}")
     
-    def get_video_directory(self, promptName: str, video_name: str, dir_type: str) -> Path:
-        """Get directory path for a specific prompt, video and type (same as real implementation)"""
+    def get_directory(self, promptName: str, dir_type: str) -> Path:
+        """Get directory path for a specific prompt and type (same as real implementation)"""
         from config import BASE_OUTPUT_DIR
         
         # Create prompt-specific base directory
@@ -63,35 +63,34 @@ class MockStorageManager:
         else:
             raise ValueError(f"Unknown directory type: {dir_type}")
         
-        # Add video-specific directory within the subfolder
-        video_dir = subfolder / video_name
-        video_dir.mkdir(parents=True, exist_ok=True)
-        return video_dir
+        # Ensure directory exists and return it
+        subfolder.mkdir(parents=True, exist_ok=True)
+        return subfolder
     
-    def get_latent_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_latent_path(self, promptName: str, job_number: int) -> Path:
         """Get path for latent file"""
-        dir_path = self.get_video_directory(promptName, video_name, "latents")
+        dir_path = self.get_directory(promptName, "latents")
         return dir_path / f"job_{job_number:03d}.latent"
     
-    def get_video_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_video_path(self, promptName: str, job_number: int) -> Path:
         """Get path for video file"""
-        dir_path = self.get_video_directory(promptName, video_name, "videos")
+        dir_path = self.get_directory(promptName, "videos")
         return dir_path / f"job_{job_number:03d}.mp4"
     
-    def get_reference_path(self, promptName: str, video_name: str, job_number: int) -> Path:
+    def get_reference_path(self, promptName: str, job_number: int) -> Path:
         """Get path for reference image"""
-        dir_path = self.get_video_directory(promptName, video_name, "references")
+        dir_path = self.get_directory(promptName, "references")
         return dir_path / f"job_{job_number:03d}_ref.png"
     
-    def get_combined_path(self, promptName: str, video_name: str, stage: int) -> Path:
+    def get_combined_path(self, promptName: str, stage: int) -> Path:
         """Get path for combined video at a specific stage"""
-        dir_path = self.get_video_directory(promptName, video_name, "combined")
+        dir_path = self.get_directory(promptName, "combined")
         return dir_path / f"combined_{stage:03d}.mp4"
     
-    def get_final_path(self, promptName: str, video_name: str) -> Path:
+    def get_final_path(self, promptName: str) -> Path:
         """Get path for final output video"""
-        dir_path = self.get_video_directory(promptName, video_name, "final")
-        return dir_path / f"{video_name}_final.mp4"
+        dir_path = self.get_directory(promptName, "final")
+        return dir_path / f"{promptName}_final.mp4"
     
     def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):
         """Save job state for recovery (same as real implementation)"""
@@ -149,18 +148,17 @@ class MockStorageManager:
             state_file.unlink()
             logger.info(f"🗑️ [DRY-RUN] Cleared state file {state_file}")
     
-    def cleanup_intermediate_files(self, promptName: str, video_name: str, keep_final: bool = True):
+    def cleanup_intermediate_files(self, promptName: str, keep_final: bool = True):
         """Simulate cleaning up intermediate files"""
         directories_to_clean = [
-            self.get_video_directory(promptName, video_name, "latents"),
-            self.get_video_directory(promptName, video_name, "videos"),
-            self.get_video_directory(promptName, video_name, "references"),
-            self.get_video_directory(promptName, video_name, "combined")
+            self.get_directory(promptName, "latents"),
+            self.get_directory(promptName, "videos"),
+            self.get_directory(promptName, "references"),
+            self.get_directory(promptName, "combined")
         ]
         
         simulated_cleanup = {
             "promptName": promptName,
-            "video_name": video_name,
             "directories_cleaned": [],
             "keep_final": keep_final,
             "timestamp": datetime.now().isoformat()
@@ -177,7 +175,7 @@ class MockStorageManager:
                 logger.info(f"🧹 [DRY-RUN] Simulated cleanup of {directory} ({file_count} files)")
         
         if not keep_final:
-            final_dir = self.get_video_directory(promptName, video_name, "final")
+            final_dir = self.get_directory(promptName, "final")
             if final_dir.exists():
                 file_count = len(list(final_dir.rglob('*')))
                 simulated_cleanup["directories_cleaned"].append({
@@ -188,7 +186,7 @@ class MockStorageManager:
         
         # Save cleanup simulation details
         if dry_run_manager.temp_dir:
-            cleanup_file = dry_run_manager.temp_dir / "state" / f"cleanup_{promptName}_{video_name}.json"
+            cleanup_file = dry_run_manager.temp_dir / "state" / f"cleanup_{promptName}.json"
             cleanup_file.parent.mkdir(parents=True, exist_ok=True)
             with open(cleanup_file, 'w') as f:
                 json.dump(simulated_cleanup, f, indent=2)
@@ -221,10 +219,10 @@ class MockStorageManager:
             logger.error(f"[DRY-RUN] Error simulating file copy: {e}")
             return False
     
-    def zip_and_upload_output(self, promptName: str, video_name: str) -> bool:
+    def zip_and_upload_output(self, promptName: str) -> bool:
         """Simulate zipping final output and uploading to GCS"""
         try:
-            final_video = self.get_final_path(promptName, video_name)
+            final_video = self.get_final_path(promptName)
             
             # Create the final video file if it doesn't exist
             if not final_video.exists():
@@ -232,7 +230,6 @@ class MockStorageManager:
                 with open(final_video, 'w') as f:
                     f.write(f"# DRY-RUN SIMULATED FINAL VIDEO\n")
                     f.write(f"# Prompt: {promptName}\n")
-                    f.write(f"# Video name: {video_name}\n")
                     f.write(f"# Created at: {datetime.now().isoformat()}\n")
             
             # Create zip file in the prompt's final directory
@@ -242,7 +239,7 @@ class MockStorageManager:
             final_dir.mkdir(parents=True, exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            zip_name = f"{video_name}_{timestamp}.zip"
+            zip_name = f"{promptName}_{timestamp}.zip"
             zip_path = final_dir / zip_name
             
             # Create actual zip for demonstration (small file)
@@ -255,7 +252,6 @@ class MockStorageManager:
             
             upload_info = {
                 "promptName": promptName,
-                "video_name": video_name,
                 "zip_name": zip_name,
                 "local_zip_path": str(zip_path),
                 "gcs_path": gcs_path,
