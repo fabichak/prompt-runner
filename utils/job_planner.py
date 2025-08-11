@@ -6,7 +6,8 @@ from pathlib import Path
 
 from models.prompt_data import PromptData
 from models.job import RenderJob, CombineJob, JobType, JobStatus
-from config import FRAMES_TO_RENDER, REFERENCE_FRAME_OFFSET
+from config import FRAMES_TO_RENDER, REFERENCE_FRAME_OFFSET, LATENTS_DIR
+from services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
 
@@ -14,8 +15,10 @@ logger = logging.getLogger(__name__)
 class JobPlanner:
     """Plans and calculates job sequences for video generation"""
     
-    def __init__(self, frames_per_chunk: int = FRAMES_TO_RENDER):
+    def __init__(self, promptName, frames_per_chunk: int = FRAMES_TO_RENDER):
         self.frames_per_chunk = frames_per_chunk
+        self.promptName = promptName        
+        self.storage = ServiceFactory.create_storage_manager()
     
     def calculate_job_sequence(self, prompt_data: PromptData) -> Tuple[List[RenderJob], List[CombineJob]]:
         """Calculate the complete job sequence for a prompt
@@ -37,6 +40,8 @@ class JobPlanner:
         current_frame = 0
         job_number = 1
         
+        self.storage.ensure_directories(self.promptName)
+
         for chunk_idx in range(num_chunks):
             # Calculate frames for this chunk
             remaining_frames = total_frames - current_frame
@@ -44,49 +49,41 @@ class JobPlanner:
             
             # Create HIGH job (odd numbers: 1, 3, 5...)
             high_job = RenderJob(
+                prompt_name=self.promptName,
                 job_type=JobType.HIGH,
                 job_number=job_number,
                 start_frame=current_frame,
                 frames_to_render=chunk_frames,
                 video_name=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
-                negative_prompt=prompt_data.negative_prompt
+                negative_prompt=prompt_data.negative_prompt,
+                latent_path=self.storage.get_latent_path(self.promptName, job_number),
+                reference_image_path= self.storage.get_reference_path(self.promptName, job_number-1) #from job-1 low output, not used in job=1
             )
-            
-            # Set reference image path for jobs 3+ (from previous LOW job)
-            if job_number >= 3:
-                prev_low_job_num = job_number - 2
-                high_job.reference_image_path = f"references/{prompt_data.video_name}/job_{prev_low_job_num:03d}_ref.png"
-            
+
             render_jobs.append(high_job)
             job_number += 1
             
             # Create LOW job (even numbers: 2, 4, 6...)
             low_job = RenderJob(
+                prompt_name=self.promptName,
                 job_type=JobType.LOW,
                 job_number=job_number,
                 start_frame=current_frame,
                 frames_to_render=chunk_frames,
                 video_name=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
-                negative_prompt=prompt_data.negative_prompt
+                negative_prompt=prompt_data.negative_prompt,
+                latent_path=self.storage.get_latent_path(self.promptName, job_number-1), #from the job-1 high output
+                reference_image_path= self.storage.get_reference_path(self.promptName, job_number-2), #from job-2 low output, not used in job=2
+                video_output_path=self.storage.get_video_path(self.promptName, job_number)
             )
-            
-            # LOW job takes latent from previous HIGH job
-            low_job.latent_input_path = f"latents/{prompt_data.video_name}/job_{job_number-1:03d}.latent"
             
             render_jobs.append(low_job)
             job_number += 1
             
             # Update frame position for next chunk
             current_frame += chunk_frames
-        
-        # Set output paths for all jobs
-        for job in render_jobs:
-            if job.job_type == JobType.HIGH:
-                job.latent_output_path = f"latents/{prompt_data.video_name}/job_{job.job_number:03d}.latent"
-            else:  # LOW job
-                job.video_output_path = f"videos/{prompt_data.video_name}/job_{job.job_number:03d}.mp4"
         
         # Create combine jobs for each LOW job output
         combine_number = 1
@@ -95,6 +92,7 @@ class JobPlanner:
         for job in render_jobs:
             if job.job_type == JobType.LOW:
                 combine_job = CombineJob(
+                    prompt_name=self.promptName,
                     combine_number=combine_number,
                     video_name=prompt_data.video_name,
                     input_video_path=job.video_output_path,

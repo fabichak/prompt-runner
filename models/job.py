@@ -20,13 +20,6 @@ class JobStatus(Enum):
 
 @dataclass
 class RenderJob:
-    def __init__(self):
-        self.storage = ServiceFactory.create_storage_manager()
-        self.reference_image_path = self.storage.get_video_directory(self.job_id, "references") 
-        self.latent_path = self.storage.get_video_directory(self.job_id, "latents") 
-        self.video_output_path = self.storage.get_video_directory(self.job_id, "videos") 
-
-
     """Represents a single render job (HIGH or LOW)"""
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     job_type: JobType = JobType.HIGH
@@ -34,6 +27,7 @@ class RenderJob:
     start_frame: int = 0
     frames_to_render: int = 101
     video_name: str = ""
+    prompt_name: str = ""  # Session identifier for organizing files
     
     # Input/output paths
     latent_path: Optional[str] = None
@@ -49,6 +43,18 @@ class RenderJob:
     positive_prompt: str = ""
     negative_prompt: str = ""
     
+    def __post_init__(self):
+        """Initialize paths after dataclass initialization"""
+        from services.service_factory import ServiceFactory
+        self.storage = ServiceFactory.create_storage_manager()
+        # Only set these paths if they're not already provided
+        if not self.reference_image_path:
+            self.reference_image_path = self.storage.get_video_directory(self.job_id, "references") 
+        if not self.latent_path:
+            self.latent_path = self.storage.get_video_directory(self.job_id, "latents") 
+        if not self.video_output_path:
+            self.video_output_path = self.storage.get_video_directory(self.job_id, "videos")
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
@@ -58,8 +64,7 @@ class RenderJob:
             'start_frame': self.start_frame,
             'frames_to_render': self.frames_to_render,
             'video_name': self.video_name,
-            'latent_input_path': self.latent_input_path,
-            'latent_output_path': self.latent_output_path,
+            'latent_path': self.latent_path,
             'reference_image_path': self.reference_image_path,
             'video_output_path': self.video_output_path,
             'status': self.status.value,
@@ -79,8 +84,7 @@ class RenderJob:
         job.start_frame = data.get('start_frame', 0)
         job.frames_to_render = data.get('frames_to_render', 101)
         job.video_name = data.get('video_name', '')
-        job.latent_input_path = data.get('latent_input_path')
-        job.latent_output_path = data.get('latent_output_path')
+        job.latent_path = data.get('latent_path')
         job.reference_image_path = data.get('reference_image_path')
         job.video_output_path = data.get('video_output_path')
         job.status = JobStatus(data.get('status', 'pending'))
@@ -100,6 +104,7 @@ class CombineJob:
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     combine_number: int = 0
     video_name: str = ""
+    prompt_name: str = ""  # Session identifier for organizing files
     
     # Input/output paths
     input_video_path: str = ""

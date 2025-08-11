@@ -24,12 +24,11 @@ from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
 
 
-def setup_logging(log_level: str = "INFO"):
+def setup_logging(log_level: str = "INFO", timestamp: str = None):
     """Set up logging configuration"""
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     
     # Determine log file location
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     log_filename = f"prompt_runner_{timestamp}.log"
     
     # Use dry-run logs directory if in dry-run mode
@@ -157,11 +156,12 @@ Examples:
     return parser.parse_args()
 
 
-def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrchestrator) -> bool:
+def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrchestrator, promptName: str) -> bool:
     """Process a single prompt file"""
     logger = logging.getLogger(__name__)
     
     logger.info("=" * 80)
+    logger.info(f"NAME: {promptName}")
     logger.info(f"PROCESSING: {prompt_data.video_name}")
     logger.info(f"Total frames: {prompt_data.total_frames}")
     logger.info("=" * 80)
@@ -174,7 +174,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
     logger.info(f"Frames per chunk: {config.FRAMES_TO_RENDER}")
 
     # Plan jobs
-    planner = JobPlanner(frames_per_chunk=args.frames_per_chunk)
+    planner = JobPlanner(promptName, frames_per_chunk=args.frames_per_chunk)
     
     if args.dry_run:
         render_jobs, combine_jobs = planner.calculate_job_sequence(prompt_data)
@@ -222,6 +222,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
     # Execute pipeline
     success = orchestrator.execute_full_pipeline(
         prompt_data,
+        promptName,
         resume_from_state=args.resume
     )
     
@@ -231,7 +232,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Upload to GCS if requested
         if not args.no_upload:
             storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(prompt_data.video_name)
+            upload_success = storage.zip_and_upload_output(promptName, prompt_data.video_name)
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
             else:
@@ -240,7 +241,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Clean up if requested
         if not args.keep_intermediate:
             storage = ServiceFactory.create_storage_manager()
-            storage.cleanup_intermediate_files(prompt_data.video_name, keep_final=True)
+            storage.cleanup_intermediate_files(promptName, prompt_data.video_name, keep_final=True)
             logger.info("Cleaned up intermediate files")
     else:
         logger.error(f"❌ Failed to process {prompt_data.video_name}")
@@ -257,7 +258,8 @@ def main():
         enable_dry_run()
     
     # Setup logging (after dry-run mode is potentially enabled)
-    setup_logging(args.log_level)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    setup_logging(args.log_level, timestamp)
     logger = logging.getLogger(__name__)
     
     logger.info("=" * 80)
@@ -280,10 +282,10 @@ def main():
     
     # Set up storage
     storage = ServiceFactory.create_storage_manager()
-    storage.ensure_directories()
     
-    # Check disk space
-    if not storage.check_disk_space(required_gb=10.0):
+    # Check disk space (using a temp prompt name for global check)
+    temp_prompt = "_global_check"
+    if not storage.check_disk_space(temp_prompt, required_gb=10.0):
         logger.error("Insufficient disk space")
         sys.exit(1)
     
@@ -330,7 +332,8 @@ def main():
     for prompt_path, prompt_data in prompt_files:
         try:
             logger.info(f"\nProcessing: {prompt_path}")
-            success = process_single_prompt(prompt_data, args, orchestrator)
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            success = process_single_prompt(prompt_data, args, orchestrator, timestamp)
             
             if success:
                 total_success += 1
@@ -351,9 +354,14 @@ def main():
     logger.info(f"Failed: {total_failed}")
     logger.info("=" * 80)
     
-    # Show disk usage
-    disk_usage = storage.get_disk_usage()
-    logger.info(f"Disk usage: {disk_usage}")
+    # Show disk usage across all prompts
+    # Note: This now shows usage for the last processed prompt only
+    # TODO: Consider adding a method to get total disk usage across all prompts
+    if 'timestamp' in locals():
+        disk_usage = storage.get_disk_usage(timestamp)
+        logger.info(f"Disk usage for last prompt: {disk_usage}")
+    else:
+        logger.info("No disk usage to report (no prompts processed)")
     
     # Show dry-run summary if applicable
     if args.dry_run:

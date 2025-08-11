@@ -12,7 +12,7 @@ from config import (
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
     NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
     NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE,
-    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES
+    NODE_VIDEO_IMAGE_OUTPUT, COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES
 )
 from services.service_factory import ServiceFactory
 
@@ -57,26 +57,21 @@ class WorkflowManager:
         
         # Set LoRA to HIGH model (Node 309 and sub-node 298)
         if NODE_LORA in workflow:
-            if "inputs" in workflow[NODE_LORA]:
-                workflow[NODE_LORA]["inputs"]["lora_name"] = HIGH_LORA
+            workflow[NODE_LORA]["inputs"]["lora_name"] = HIGH_LORA
         
         # Set model to HIGH noise model
         if NODE_MODEL in workflow:
-            if "inputs" in workflow[NODE_MODEL]:
-                workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
+            workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
         
         # Handle reference images (delete for jobs 1-2, set for jobs 3+)
         if job.job_number <= 2:
             # Delete reference images node for first two jobs
-            if NODE_VACE in workflow: #VACE NODE
-                del workflow[NODE_VACE]["inputs"]["ref_images"]
-                logger.debug(f"Deleted reference images node for job {job.job_number}")
+            del workflow[NODE_VACE]["inputs"]["ref_images"]
+            logger.debug(f"Deleted reference images node for job {job.job_number}")
         else:
             # Set reference image path for jobs 3+
-            if NODE_REF_IMAGES in workflow and job.reference_image_path:
-                if "inputs" in workflow[NODE_REF_IMAGES]:
-                    workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = self.storage.get_reference_path(job.video_name, job.job_number)
-                    logger.debug(f"Set reference image: {job.reference_image_path}")
+            workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = job.reference_image_path
+            logger.debug(f"Set reference image: {job.reference_image_path}")
         
         # Delete samples nodes for HIGH jobs
         if NODE_SAMPLES_54 in workflow:
@@ -89,19 +84,18 @@ class WorkflowManager:
 
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
-            if "inputs" in workflow[NODE_FRAMES_VALUE]:
-                workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+            workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+            workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
         
         # Set start frame (skip-n-frames)
         if NODE_START_FRAME in workflow:
-            if "inputs" in workflow[NODE_START_FRAME]:
-                workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
+            workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
-        # Delete latent node for LOW jobs
+        #define folder to save latent
         if NODE_SAVE_LATENT in workflow:
-           if "inputs" in workflow[NODE_SAVE_LATENT]:
-                 workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_path
-                 workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = "latent"
+            workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_path
+            workflow[NODE_SAVE_LATENT]["inputs"]["subfolder_name"] = ""
+            workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = "latent" + job.job_id
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
@@ -146,43 +140,39 @@ class WorkflowManager:
         
         # Set LoRA to LOW model
         if NODE_LORA in workflow:
-            if "inputs" in workflow[NODE_LORA]:
-                workflow[NODE_LORA]["inputs"]["lora_name"] = LOW_LORA
+            workflow[NODE_LORA]["inputs"]["lora_name"] = LOW_LORA
         
         # Set model to LOW noise model
         if NODE_MODEL in workflow:
-            if "inputs" in workflow[NODE_MODEL]:
-                workflow[NODE_MODEL]["inputs"]["model"] = LOW_MODEL
+            workflow[NODE_MODEL]["inputs"]["model"] = LOW_MODEL
         
         # Delete latent node for LOW jobs
         if NODE_SAVE_LATENT in workflow:
             del workflow[NODE_SAVE_LATENT]
             logger.debug(f"Deleted latent node {NODE_SAVE_LATENT} for LOW job")
 
-        # Delete latent node for LOW jobs
+        # set folder to load latent
         if NODE_LOAD_LATENT in workflow:
-            if "inputs" in workflow[NODE_LOAD_LATENT]:
-                workflow[NODE_LOAD_LATENT]["inputs"]["folder_path"] = job.latent_path
+            workflow[NODE_LOAD_LATENT]["inputs"]["folder_path"] = job.latent_path
 
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
-            if "inputs" in workflow[NODE_FRAMES_VALUE]:
-                workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+            workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+            workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
         
         # Set start frame
         if NODE_START_FRAME in workflow:
-            if "inputs" in workflow[NODE_START_FRAME]:
-                workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
+            workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
         # Set start frame
         if NODE_VIDEO_COMBINE in workflow:
-            if "inputs" in workflow[NODE_VIDEO_COMBINE]:
-                workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
-                workflow[344]["inputs"]["filename_prefix"] = job.video_output_path
+            workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
+            workflow[NODE_VIDEO_IMAGE_OUTPUT]["inputs"]["filename_prefix"] = job.video_output_path
 
+        #load image by setting image_path
         if job.job_number > 2:
-            workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = self.storage.get_reference_path(job.video_name, job.job_number)
-            logger.debug(f"Set reference image: {self.storage.get_reference_path(job.video_name, job.job_number)}")
+            workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = job.reference_image_path
+            logger.debug(f"Set reference image: {job.reference_image_path}")
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
@@ -200,13 +190,14 @@ class WorkflowManager:
                 "start_frame": job.start_frame,
                 "lora_model": LOW_LORA,
                 "noise_model": LOW_MODEL,
-                "latent_input_path": job.latent_input_path,
+                "latent_path": job.latent_path,
+                "reference_image_path": job.reference_image_path,
                 "modifications": [
                     f"LoRA: {LOW_LORA}",
                     f"Model: {LOW_MODEL}",
                     f"Frames: {job.frames_to_render}",
                     f"Start: {job.start_frame}",
-                    f"Latent input: {job.latent_input_path}"
+                    f"Latent input: {job.latent_path}"
                 ]
             }
             dry_run_manager.save_workflow(workflow, job_info)

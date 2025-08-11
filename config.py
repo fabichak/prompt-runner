@@ -31,12 +31,13 @@ try:
         BASE_OUTPUT_DIR = Path("output/prompt-runner")
 except Exception:
     BASE_OUTPUT_DIR = Path("output/prompt-runner")
-LATENTS_DIR = BASE_OUTPUT_DIR / "latents"
-VIDEOS_DIR = BASE_OUTPUT_DIR / "videos"
-REFERENCES_DIR = BASE_OUTPUT_DIR / "references"
-COMBINED_DIR = BASE_OUTPUT_DIR / "combined"
-FINAL_DIR = BASE_OUTPUT_DIR / "final"
-STATE_DIR = BASE_OUTPUT_DIR / "state"
+
+LATENTS_DIR = "latents"
+VIDEOS_DIR = "videos"
+REFERENCES_DIR = "references"
+COMBINED_DIR = "combined"
+FINAL_DIR = "final"
+STATE_DIR = "state"
 
 # GCS Configuration
 GCS_BUCKET_PATH = "gs://aiof-saved-files/"

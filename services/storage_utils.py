@@ -19,79 +19,87 @@ logger = logging.getLogger(__name__)
 
 class StorageManager:
     """Handles file operations, storage, and GCS uploads"""
-    
-    def __init__(self):
-        self.ensure_directories()
-    
-    def ensure_directories(self):
-        """Create all required directories"""
+        
+    def ensure_directories(self, promptName: str):
+        """Create all required directories for a specific prompt"""
+        prompt_base = BASE_OUTPUT_DIR / promptName
         directories = [
-            BASE_OUTPUT_DIR,
-            LATENTS_DIR,
-            VIDEOS_DIR,
-            REFERENCES_DIR,
-            COMBINED_DIR,
-            FINAL_DIR,
-            STATE_DIR
+            prompt_base,
+            prompt_base / "latents",
+            prompt_base / "videos",
+            prompt_base / "references", 
+            prompt_base / "combined",
+            prompt_base / "final",
+            prompt_base / "state"
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
             logger.debug(f"Ensured directory exists: {directory}")
     
-    def get_video_directory(self, video_name: str, dir_type: str) -> Path:
-        """Get directory path for a specific video and type"""
+    def get_video_directory(self, promptName: str, video_name: str, dir_type: str) -> Path:
+        """Get directory path for a specific prompt, video and type"""
+        # Create prompt-specific base directory
+        prompt_base = BASE_OUTPUT_DIR / promptName
+        
+        # Add the subfolder type
         if dir_type == "latents":
-            base = LATENTS_DIR
+            subfolder = prompt_base / "latents"
         elif dir_type == "videos":
-            base = VIDEOS_DIR
+            subfolder = prompt_base / "videos"
         elif dir_type == "references":
-            base = REFERENCES_DIR
+            subfolder = prompt_base / "references"
         elif dir_type == "combined":
-            base = COMBINED_DIR
+            subfolder = prompt_base / "combined"
         elif dir_type == "final":
-            base = FINAL_DIR
+            subfolder = prompt_base / "final"
         else:
             raise ValueError(f"Unknown directory type: {dir_type}")
         
-        video_dir = base / video_name
+        # Add video-specific directory within the subfolder
+        video_dir = subfolder / video_name
         video_dir.mkdir(parents=True, exist_ok=True)
         return video_dir
     
-    def get_latent_path(self, video_name: str, job_number: int) -> Path:
+    def get_latent_path(self, promptName: str, video_name: str, job_number: int) -> Path:
         """Get path for latent file"""
-        dir_path = self.get_video_directory(video_name, "latents")
+        dir_path = self.get_video_directory(promptName, video_name, "latents")
         return dir_path / f"job_{job_number:03d}.latent"
     
-    def get_video_path(self, video_name: str, job_number: int) -> Path:
+    def get_video_path(self, promptName: str, video_name: str, job_number: int) -> Path:
         """Get path for video file"""
-        dir_path = self.get_video_directory(video_name, "videos")
+        dir_path = self.get_video_directory(promptName, video_name, "videos")
         return dir_path / f"job_{job_number:03d}.mp4"
     
-    def get_reference_path(self, video_name: str, job_number: int) -> Path:
+    def get_reference_path(self, promptName: str, video_name: str, job_number: int) -> Path:
         """Get path for reference image"""
-        dir_path = self.get_video_directory(video_name, "references")
+        dir_path = self.get_video_directory(promptName, video_name, "references")
         return dir_path / f"job_{job_number:03d}_ref.png"
     
-    def get_combined_path(self, video_name: str, stage: int) -> Path:
+    def get_combined_path(self, promptName: str, video_name: str, stage: int) -> Path:
         """Get path for combined video at a specific stage"""
-        dir_path = self.get_video_directory(video_name, "combined")
+        dir_path = self.get_video_directory(promptName, video_name, "combined")
         return dir_path / f"combined_{stage:03d}.mp4"
     
-    def get_final_path(self, video_name: str) -> Path:
+    def get_final_path(self, promptName: str, video_name: str) -> Path:
         """Get path for final output video"""
-        dir_path = self.get_video_directory(video_name, "final")
+        dir_path = self.get_video_directory(promptName, video_name, "final")
         return dir_path / f"{video_name}_final.mp4"
     
-    def save_state(self, state_name: str, data: Dict[str, Any]):
+    def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):
         """Save job state for recovery"""
-        state_file = STATE_DIR / f"{state_name}.json"
+        prompt_base = BASE_OUTPUT_DIR / promptName
+        state_dir = prompt_base / "state"
+        state_dir.mkdir(parents=True, exist_ok=True)
+        
+        state_file = state_dir / f"{state_name}.json"
         with open(state_file, 'w') as f:
             json.dump(data, f, indent=2, default=str)
         logger.info(f"Saved state to {state_file}")
     
-    def load_state(self, state_name: str) -> Optional[Dict[str, Any]]:
+    def load_state(self, promptName: str, state_name: str) -> Optional[Dict[str, Any]]:
         """Load job state for recovery"""
-        state_file = STATE_DIR / f"{state_name}.json"
+        prompt_base = BASE_OUTPUT_DIR / promptName
+        state_file = prompt_base / "state" / f"{state_name}.json"
         if not state_file.exists():
             return None
         
@@ -104,20 +112,21 @@ class StorageManager:
             logger.error(f"Error loading state: {e}")
             return None
     
-    def clear_state(self, state_name: str):
+    def clear_state(self, promptName: str, state_name: str):
         """Clear saved state after successful completion"""
-        state_file = STATE_DIR / f"{state_name}.json"
+        prompt_base = BASE_OUTPUT_DIR / promptName
+        state_file = prompt_base / "state" / f"{state_name}.json"
         if state_file.exists():
             state_file.unlink()
             logger.info(f"Cleared state file {state_file}")
     
-    def cleanup_intermediate_files(self, video_name: str, keep_final: bool = True):
+    def cleanup_intermediate_files(self, promptName: str, video_name: str, keep_final: bool = True):
         """Clean up intermediate files after successful completion"""
         directories_to_clean = [
-            self.get_video_directory(video_name, "latents"),
-            self.get_video_directory(video_name, "videos"),
-            self.get_video_directory(video_name, "references"),
-            self.get_video_directory(video_name, "combined")
+            self.get_video_directory(promptName, video_name, "latents"),
+            self.get_video_directory(promptName, video_name, "videos"),
+            self.get_video_directory(promptName, video_name, "references"),
+            self.get_video_directory(promptName, video_name, "combined")
         ]
         
         for directory in directories_to_clean:
@@ -126,7 +135,7 @@ class StorageManager:
                 logger.info(f"Cleaned up {directory}")
         
         if not keep_final:
-            final_dir = self.get_video_directory(video_name, "final")
+            final_dir = self.get_video_directory(promptName, video_name, "final")
             if final_dir.exists():
                 shutil.rmtree(final_dir)
     
@@ -134,6 +143,7 @@ class StorageManager:
         """Copy file from ComfyUI output to our directory structure"""
         try:
             if source_path.exists():
+                dest_path.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source_path, dest_path)
                 logger.debug(f"Copied {source_path} to {dest_path}")
                 return True
@@ -144,18 +154,22 @@ class StorageManager:
             logger.error(f"Error copying file: {e}")
             return False
     
-    def zip_and_upload_output(self, video_name: str) -> bool:
+    def zip_and_upload_output(self, promptName: str, video_name: str) -> bool:
         """Zip final output and upload to GCS"""
         try:
-            final_video = self.get_final_path(video_name)
+            final_video = self.get_final_path(promptName, video_name)
             if not final_video.exists():
                 logger.error(f"Final video not found: {final_video}")
                 return False
             
-            # Create zip file
+            # Create zip file in the prompt's final directory
+            prompt_base = BASE_OUTPUT_DIR / promptName
+            final_dir = prompt_base / "final"
+            final_dir.mkdir(parents=True, exist_ok=True)
+            
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             zip_name = f"{video_name}_{timestamp}.zip"
-            zip_path = FINAL_DIR / zip_name
+            zip_path = final_dir / zip_name
             
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 zipf.write(final_video, final_video.name)
@@ -179,31 +193,45 @@ class StorageManager:
             logger.error(f"Error in zip and upload: {e}")
             return False
     
-    def get_disk_usage(self) -> Dict[str, float]:
-        """Get disk usage statistics in GB"""
+    def get_disk_usage(self, promptName: str) -> Dict[str, float]:
+        """Get disk usage statistics in GB for a specific prompt"""
         stats = {}
-        for name, path in [
-            ("latents", LATENTS_DIR),
-            ("videos", VIDEOS_DIR),
-            ("references", REFERENCES_DIR),
-            ("combined", COMBINED_DIR),
-            ("final", FINAL_DIR),
-            ("total", BASE_OUTPUT_DIR)
+        prompt_base = BASE_OUTPUT_DIR / promptName
+        
+        for name, subfolder in [
+            ("latents", "latents"),
+            ("videos", "videos"),
+            ("references", "references"),
+            ("combined", "combined"),
+            ("final", "final"),
+            ("state", "state"),
+            ("total", "")  # Empty string for the prompt base directory
         ]:
+            if subfolder:
+                path = prompt_base / subfolder
+            else:
+                path = prompt_base
+                
             if path.exists():
                 size = sum(f.stat().st_size for f in path.rglob('*') if f.is_file())
                 stats[name] = size / (1024 ** 3)  # Convert to GB
+            else:
+                stats[name] = 0.0
         return stats
     
-    def check_disk_space(self, required_gb: float = 10.0) -> bool:
-        """Check if sufficient disk space is available"""
+    def check_disk_space(self, promptName: str, required_gb: float = 10.0) -> bool:
+        """Check if sufficient disk space is available for prompt operations"""
         try:
-            stat = shutil.disk_usage(BASE_OUTPUT_DIR)
+            prompt_base = BASE_OUTPUT_DIR / promptName
+            # Ensure prompt directory exists for disk usage check
+            prompt_base.mkdir(parents=True, exist_ok=True)
+            
+            stat = shutil.disk_usage(prompt_base)
             available_gb = stat.free / (1024 ** 3)
             if available_gb < required_gb:
-                logger.warning(f"Low disk space: {available_gb:.1f}GB available, {required_gb:.1f}GB required")
+                logger.warning(f"Low disk space for prompt '{promptName}': {available_gb:.1f}GB available, {required_gb:.1f}GB required")
                 return False
             return True
         except Exception as e:
-            logger.error(f"Error checking disk space: {e}")
-            return True  # Assume sufficient space on error
+            logger.error(f"Error checking disk space for prompt '{promptName}': {e}")
+            return True  # Assume sufficient space on error  # Assume sufficient space on error

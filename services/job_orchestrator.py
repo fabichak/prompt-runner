@@ -32,24 +32,28 @@ class JobOrchestrator:
             Path(JSON_WORKFLOW_FILE),
             Path(COMBINE_WORKFLOW_FILE)
         )
-        self.job_planner = JobPlanner()
+        # job_planner will be created per-prompt with promptName
         
         # Track execution state
         self.completed_jobs = []
         self.failed_jobs = []
         self.current_state = {}
     
-    def execute_full_pipeline(self, prompt_data: PromptData, resume_from_state: Optional[str] = None) -> bool:
+    def execute_full_pipeline(self, prompt_data: PromptData, promptName: str, resume_from_state: Optional[str] = None) -> bool:
         """Execute the complete rendering pipeline for a prompt
         
         Args:
             prompt_data: The prompt data to process
+            promptName: Name/identifier for organizing this prompt's files
             resume_from_state: Optional state file to resume from
             
         Returns:
             True if successful, False otherwise
         """
         try:
+            # Store promptName for use in storage operations
+            self.current_prompt_name = promptName
+            
             # Set video name for dry-run organized storage
             if is_dry_run():
                 dry_run_manager.set_current_video_name(prompt_data.video_name)
@@ -61,16 +65,22 @@ class JobOrchestrator:
             
             # Load or create execution state
             if resume_from_state:
-                state = self.storage.load_state(resume_from_state)
+                state = self.storage.load_state(promptName, resume_from_state)
                 if state:
                     self.restore_state(state)
                     logger.info(f"Resumed from state: {resume_from_state}")
             
+            # Ensure prompt directories exist
+            self.storage.ensure_directories(promptName)
+            
+            # Create job planner for this prompt
+            job_planner = JobPlanner(promptName)
+            
             # Plan jobs
-            render_jobs, combine_jobs = self.job_planner.calculate_job_sequence(prompt_data)
+            render_jobs, combine_jobs = job_planner.calculate_job_sequence(prompt_data)
             
             # Validate job sequence
-            if not self.job_planner.validate_job_sequence(render_jobs, prompt_data.total_frames):
+            if not job_planner.validate_job_sequence(render_jobs, prompt_data.total_frames):
                 logger.error("Invalid job sequence")
                 return False
             
@@ -83,7 +93,7 @@ class JobOrchestrator:
             
             if not all(r.success for r in render_results):
                 logger.error("Some render jobs failed")
-                self.save_state(prompt_data.video_name)
+                self.save_state(promptName, prompt_data.video_name)
                 return False
             
             # Execute combine jobs
@@ -95,7 +105,7 @@ class JobOrchestrator:
             
             if not all(r.success for r in combine_results):
                 logger.error("Some combine jobs failed")
-                self.save_state(prompt_data.video_name)
+                self.save_state(promptName, prompt_data.video_name)
                 return False
             
             # Create final output
@@ -104,10 +114,10 @@ class JobOrchestrator:
             if final_success:
                 # Clean up intermediate files
                 logger.info("Cleaning up intermediate files...")
-                self.storage.cleanup_intermediate_files(prompt_data.video_name, keep_final=True)
+                self.storage.cleanup_intermediate_files(promptName, prompt_data.video_name, keep_final=True)
                 
                 # Clear saved state
-                self.storage.clear_state(prompt_data.video_name)
+                self.storage.clear_state(promptName, prompt_data.video_name)
                 
                 logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
                 return True
@@ -117,7 +127,7 @@ class JobOrchestrator:
                 
         except Exception as e:
             logger.error(f"Pipeline execution error: {e}")
-            self.save_state(prompt_data.video_name)
+            self.save_state(promptName, prompt_data.video_name)
             return False
         finally:
             self.comfyui_client.disconnect()
@@ -127,10 +137,10 @@ class JobOrchestrator:
         results = []
         
         for job in jobs:
-            # Check dependencies
-            if not self.job_planner.can_job_run(job, self.completed_jobs):
-                logger.warning(f"Skipping {job} - dependencies not met")
-                job.status = JobStatus.SKIPPED
+            # Check dependencies  
+            # Note: For now, run jobs in sequence. Dependencies handled by job ordering.
+            if job.status == JobStatus.SKIPPED:
+                logger.warning(f"Skipping {job} - already marked as skipped")
                 continue
             
             # Skip if already completed (for resume)
@@ -174,10 +184,15 @@ class JobOrchestrator:
         )
         
         try:
+            # Debug logging to understand the job type issue
+            logger.info(f"🔍 Processing job {job.job_number}: job_type={job.job_type}, type={type(job.job_type)}")
+            
             # Modify workflow based on job type
             if job.job_type == JobType.HIGH:
+                logger.info(f"🔵 Calling modify_for_high_job for job {job.job_number}")
                 workflow = self.workflow_manager.modify_for_high_job(job)
             else:
+                logger.info(f"🟡 Calling modify_for_low_job for job {job.job_number}")
                 workflow = self.workflow_manager.modify_for_low_job(job)
             
             # Execute workflow with retry
@@ -187,23 +202,23 @@ class JobOrchestrator:
                 # Wait for outputs to be written
                 time.sleep(2)
                 
-                # Copy outputs to our directory structure
-                if job.job_type == JobType.HIGH:
-                    # Save latent output
-                    latent_path = self.storage.get_latent_path(job.video_name, job.job_number)
-                    # Note: You'll need to adjust this based on how ComfyUI saves latents
-                    comfyui_output = Path(f"/workspace/ComfyUI/output/latent_{prompt_id}.safetensors")
-                    if self.storage.copy_from_comfyui_output(comfyui_output, latent_path):
-                        result.latent_path = str(latent_path)
-                        job.latent_output_path = str(latent_path)
-                else:
-                    # Save video output
-                    video_path = self.storage.get_video_path(job.video_name, job.job_number)
-                    # Note: Adjust based on actual ComfyUI output naming
-                    comfyui_output = Path(f"/workspace/ComfyUI/output/{prompt_id}.mp4")
-                    if self.storage.copy_from_comfyui_output(comfyui_output, video_path):
-                        result.output_path = str(video_path)
-                        job.video_output_path = str(video_path)
+                # # Copy outputs to our directory structure
+                # if job.job_type == JobType.HIGH:
+                #     # Save latent output
+                #     latent_path = self.storage.get_latent_path(self.current_prompt_name, job.video_name, job.job_number)
+                #     # Note: You'll need to adjust this based on how ComfyUI saves latents
+                #     comfyui_output = Path(f"/workspace/ComfyUI/output/latent_{prompt_id}.safetensors")
+                #     if self.storage.copy_from_comfyui_output(comfyui_output, latent_path):
+                #         result.latent_path = str(latent_path)
+                #         job.latent_path = str(latent_path)
+                # else:
+                #     # Save video output
+                #     video_path = self.storage.get_video_path(self.current_prompt_name, job.video_name, job.job_number)
+                #     # Note: Adjust based on actual ComfyUI output naming
+                #     comfyui_output = Path(f"/workspace/ComfyUI/output/{prompt_id}.mp4")
+                #     if self.storage.copy_from_comfyui_output(comfyui_output, video_path):
+                #         result.output_path = str(video_path)
+                #         job.video_output_path = str(video_path)
                 
                 result.complete(True)
                 logger.info(f"✓ Job {job.job_number} completed successfully")
@@ -259,7 +274,7 @@ class JobOrchestrator:
                 time.sleep(2)
                 
                 # Copy combined output
-                combined_path = self.storage.get_combined_path(job.video_name, job.combine_number)
+                combined_path = self.storage.get_combined_path(self.current_prompt_name, job.video_name, job.combine_number)
                 comfyui_output = Path(f"/workspace/ComfyUI/output/combined_{prompt_id}.mp4")
                 
                 if self.storage.copy_from_comfyui_output(comfyui_output, combined_path):
@@ -293,17 +308,15 @@ class JobOrchestrator:
             
             video_path = Path(job.video_output_path)
             if not video_path.exists():
-                # Try in ComfyUI output directory
-                video_path = Path(f"/workspace/ComfyUI/output") / video_path.name
-                if not video_path.exists():
-                    logger.error(f"Video not found: {video_path}")
-                    return False
+                logger.error(f"Video not found: {video_path}")
+                return False
             
-            # Calculate frame number to extract
-            frame_num = self.job_planner.calculate_reference_frame(job.frames_to_render)
+            # Calculate frame number to extract (frames_to_render - 10)
+            from config import REFERENCE_FRAME_OFFSET
+            frame_num = max(1, job.frames_to_render - REFERENCE_FRAME_OFFSET)
             
             # Get reference image path
-            ref_path = self.storage.get_reference_path(job.video_name, job.job_number)
+            ref_path = self.storage.get_reference_path(self.current_prompt_name, job.video_name, job.job_number)
             
             # Handle dry-run mode
             if is_dry_run():
@@ -361,7 +374,7 @@ class JobOrchestrator:
                     return False
             
             # Copy to final output
-            final_path = self.storage.get_final_path(video_name)
+            final_path = self.storage.get_final_path(self.current_prompt_name, video_name)
             shutil.copy2(last_combined_path, final_path)
             
             logger.info(f"Created final output: {final_path}")
@@ -379,7 +392,7 @@ class JobOrchestrator:
             'failed_jobs': self.failed_jobs,
             'timestamp': datetime.now().isoformat()
         }
-        self.storage.save_state(video_name, state)
+        self.storage.save_state(self.current_prompt_name, video_name, state)
     
     def restore_state(self, state: Dict[str, Any]):
         """Restore execution state from saved data"""

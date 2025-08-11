@@ -17,6 +17,15 @@ from models.job import RenderJob, CombineJob
 logger = logging.getLogger(__name__)
 
 
+class PathJSONEncoder(json.JSONEncoder):
+    """Custom JSON encoder that converts Path objects to strings"""
+    
+    def default(self, obj):
+        if isinstance(obj, Path):
+            return str(obj)
+        return super().default(obj)
+
+
 class DryRunManager:
     """Manages dry-run mode configuration and temp file generation"""
     
@@ -257,7 +266,7 @@ class DryRunManager:
         }
         
         with open(filepath, 'w') as f:
-            json.dump(workflow_metadata, f, indent=2)
+            json.dump(workflow_metadata, f, indent=2, cls=PathJSONEncoder)
             
         self.generated_workflows.append({
             "filename": filename,
@@ -287,24 +296,28 @@ class DryRunManager:
         }
         
         for job in jobs:
+            # Fix: Use .value for enum serialization instead of str()
+            job_type_value = getattr(job, 'job_type', job_type)
+            if hasattr(job_type_value, 'value'):
+                job_type_str = job_type_value.value
+            else:
+                job_type_str = str(job_type_value)
+                
             job_plan["jobs"].append({
                 "job_id": getattr(job, 'job_id', str(uuid.uuid4())),
                 "job_number": getattr(job, 'job_number', 0),
-                "job_type": str(getattr(job, 'job_type', job_type)),
+                "job_type": job_type_str,
                 "frames_to_render": getattr(job, 'frames_to_render', 0),
                 "start_frame": getattr(job, 'start_frame', 0),
                 "video_name": getattr(job, 'video_name', 'unknown'),
                 "positive_prompt": getattr(job, 'positive_prompt', ''),
                 "negative_prompt": getattr(job, 'negative_prompt', ''),
-                "latent_input_path": getattr(job, 'latent_input_path', None),
+                "latent_path": getattr(job, 'latent_path', None),
                 "reference_image_path": getattr(job, 'reference_image_path', None)
             })
             
         with open(filepath, 'w') as f:
-            json.dump(job_plan, f, indent=2)
-            
-        logger.info(f"📋 Saved {job_type} job plan: {filename} ({len(jobs)} jobs)")
-        
+            json.dump(job_plan, f, indent=2, cls=PathJSONEncoder)        
     def get_summary(self) -> Dict[str, Any]:
         """Get dry-run execution summary"""
         if not self.is_dry_run:
