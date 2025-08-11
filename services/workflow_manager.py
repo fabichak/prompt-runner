@@ -10,10 +10,11 @@ from services.dry_run_manager import is_dry_run, dry_run_manager
 from config import (
     HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL,
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
-    NODE_LATENT_365, NODE_SAMPLES_341, NODE_FRAMES_VALUE,
-    NODE_START_FRAME, NODE_VIDEO_OUTPUT,
+    NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
+    NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE,
     COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES
 )
+from services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,7 @@ class WorkflowManager:
     """Manages workflow JSON modifications for different job types"""
     
     def __init__(self, base_workflow_path: Path, combine_workflow_path: Path):
+        self.storage = ServiceFactory.create_storage_manager()
         self.base_workflow = self._load_workflow(base_workflow_path)
         self.combine_workflow = self._load_workflow(combine_workflow_path)
         
@@ -57,34 +59,34 @@ class WorkflowManager:
         if NODE_LORA in workflow:
             if "inputs" in workflow[NODE_LORA]:
                 workflow[NODE_LORA]["inputs"]["lora_name"] = HIGH_LORA
-            # Handle sub-node if it exists
-            if "298" in workflow[NODE_LORA]:
-                workflow[NODE_LORA]["298"]["inputs"]["lora_name"] = HIGH_LORA
         
         # Set model to HIGH noise model
         if NODE_MODEL in workflow:
             if "inputs" in workflow[NODE_MODEL]:
-                workflow[NODE_MODEL]["inputs"]["gguf_name"] = HIGH_MODEL
+                workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
         
         # Handle reference images (delete for jobs 1-2, set for jobs 3+)
         if job.job_number <= 2:
             # Delete reference images node for first two jobs
-            if NODE_REF_IMAGES in workflow:
-                del workflow[NODE_REF_IMAGES]
+            if NODE_VACE in workflow: #VACE NODE
+                del workflow[NODE_VACE]["inputs"]["ref_images"]
                 logger.debug(f"Deleted reference images node for job {job.job_number}")
         else:
             # Set reference image path for jobs 3+
             if NODE_REF_IMAGES in workflow and job.reference_image_path:
                 if "inputs" in workflow[NODE_REF_IMAGES]:
-                    workflow[NODE_REF_IMAGES]["inputs"]["image"] = job.reference_image_path
+                    workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = self.storage.get_reference_path(job.video_name, job.job_number)
                     logger.debug(f"Set reference image: {job.reference_image_path}")
         
         # Delete samples nodes for HIGH jobs
-        for node_id in [NODE_SAMPLES_54, NODE_SAMPLES_341]:
-            if node_id in workflow:
-                del workflow[node_id]
-                logger.debug(f"Deleted samples node {node_id} for HIGH job")
+        if NODE_SAMPLES_54 in workflow:
+            del workflow[NODE_SAMPLES_54]["inputs"]["samples"]
+            logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
         
+        if NODE_VIDEO_DECODE in workflow:
+            del workflow[NODE_VIDEO_DECODE]["inputs"]["samples"]
+            logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
+
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
             if "inputs" in workflow[NODE_FRAMES_VALUE]:
@@ -93,8 +95,14 @@ class WorkflowManager:
         # Set start frame (skip-n-frames)
         if NODE_START_FRAME in workflow:
             if "inputs" in workflow[NODE_START_FRAME]:
-                workflow[NODE_START_FRAME]["inputs"]["start_frame"] = job.start_frame
+                workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
+        # Delete latent node for LOW jobs
+        if NODE_SAVE_LATENT in workflow:
+           if "inputs" in workflow[NODE_SAVE_LATENT]:
+                 workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_path
+                 workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = "latent"
+
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
@@ -140,32 +148,22 @@ class WorkflowManager:
         if NODE_LORA in workflow:
             if "inputs" in workflow[NODE_LORA]:
                 workflow[NODE_LORA]["inputs"]["lora_name"] = LOW_LORA
-            # Handle sub-node if it exists
-            if "298" in workflow[NODE_LORA]:
-                workflow[NODE_LORA]["298"]["inputs"]["lora_name"] = LOW_LORA
         
         # Set model to LOW noise model
         if NODE_MODEL in workflow:
             if "inputs" in workflow[NODE_MODEL]:
-                workflow[NODE_MODEL]["inputs"]["gguf_name"] = LOW_MODEL
+                workflow[NODE_MODEL]["inputs"]["model"] = LOW_MODEL
         
         # Delete latent node for LOW jobs
-        if NODE_LATENT_365 in workflow:
-            del workflow[NODE_LATENT_365]
-            logger.debug(f"Deleted latent node {NODE_LATENT_365} for LOW job")
-        
-        # Set latent input from previous HIGH job
-        if job.latent_input_path:
-            # Find the node that needs the latent input
-            # This will depend on your specific workflow structure
-            # You may need to adjust based on your actual workflow
-            for node_id, node in workflow.items():
-                if "inputs" in node and "latent" in node["inputs"]:
-                    # Set the latent input path
-                    node["inputs"]["latent"] = job.latent_input_path
-                    logger.debug(f"Set latent input in node {node_id}: {job.latent_input_path}")
-                    break
-        
+        if NODE_SAVE_LATENT in workflow:
+            del workflow[NODE_SAVE_LATENT]
+            logger.debug(f"Deleted latent node {NODE_SAVE_LATENT} for LOW job")
+
+        # Delete latent node for LOW jobs
+        if NODE_LOAD_LATENT in workflow:
+            if "inputs" in workflow[NODE_LOAD_LATENT]:
+                workflow[NODE_LOAD_LATENT]["inputs"]["folder_path"] = job.latent_path
+
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
             if "inputs" in workflow[NODE_FRAMES_VALUE]:
@@ -174,8 +172,18 @@ class WorkflowManager:
         # Set start frame
         if NODE_START_FRAME in workflow:
             if "inputs" in workflow[NODE_START_FRAME]:
-                workflow[NODE_START_FRAME]["inputs"]["start_frame"] = job.start_frame
+                workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
+        # Set start frame
+        if NODE_VIDEO_COMBINE in workflow:
+            if "inputs" in workflow[NODE_VIDEO_COMBINE]:
+                workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
+                workflow[344]["inputs"]["filename_prefix"] = job.video_output_path
+
+        if job.job_number > 2:
+            workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = self.storage.get_reference_path(job.video_name, job.job_number)
+            logger.debug(f"Set reference image: {self.storage.get_reference_path(job.video_name, job.job_number)}")
+
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
@@ -269,17 +277,10 @@ class WorkflowManager:
     def _set_prompts(self, workflow: Dict[str, Any], positive: str, negative: str):
         """Set positive and negative prompts in workflow"""
         # Find prompt nodes (typically nodes with class_type containing "CLIPTextEncode")
-        for node_id, node in workflow.items():
-            if "class_type" in node and "CLIPTextEncode" in node.get("class_type", ""):
-                if "inputs" in node:
-                    # Determine if this is positive or negative based on connections or naming
-                    # This is a simplified approach - adjust based on your workflow
-                    if "positive" in str(node).lower() or node_id in ["6", "7"]:  # Common positive prompt nodes
-                        node["inputs"]["text"] = positive
-                        logger.debug(f"Set positive prompt in node {node_id}")
-                    elif "negative" in str(node).lower() or node_id in ["8", "9"]:  # Common negative prompt nodes
-                        node["inputs"]["text"] = negative
-                        logger.debug(f"Set negative prompt in node {node_id}")
+        if NODE_PROMPT in workflow:
+            workflow[NODE_PROMPT]["inputs"]["positive_prompt"] = positive
+            workflow[NODE_PROMPT]["inputs"]["negative_prompt"] = negative
+            logger.debug(f"Set positive and negative prompt in node {NODE_PROMPT}")
     
     def _set_output_path(self, workflow: Dict[str, Any], output_path: str):
         """Set output path in workflow"""

@@ -20,6 +20,13 @@ class JobStatus(Enum):
 
 @dataclass
 class RenderJob:
+    def __init__(self):
+        self.storage = ServiceFactory.create_storage_manager()
+        self.reference_image_path = self.storage.get_video_directory(self.job_id, "references") 
+        self.latent_path = self.storage.get_video_directory(self.job_id, "latents") 
+        self.video_output_path = self.storage.get_video_directory(self.job_id, "videos") 
+
+
     """Represents a single render job (HIGH or LOW)"""
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     job_type: JobType = JobType.HIGH
@@ -29,8 +36,7 @@ class RenderJob:
     video_name: str = ""
     
     # Input/output paths
-    latent_input_path: Optional[str] = None
-    latent_output_path: Optional[str] = None
+    latent_path: Optional[str] = None
     reference_image_path: Optional[str] = None
     video_output_path: Optional[str] = None
     

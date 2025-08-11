@@ -298,7 +298,7 @@
   },
   "338": {
     "inputs": {
-      "folder_path": "/workspace/ComfyUI/output/latents/test1",
+      "folder_path": "/workspace/ComfyUI/output/prompt-runner/latents",
       "sort_by": "date",
       "invert_order": false,
       "pass_output": true
@@ -457,9 +457,9 @@
   },
   "365": {
     "inputs": {
-      "folder_path": "/workspace/ComfyUI/output/latents",
-      "filename": "test1-2",
-      "subfolder_name": "test1",
+      "folder_path": "/workspace/ComfyUI/output/prompt-runner",
+      "filename": "latent",
+      "subfolder_name": "latents",
       "latent": [
         "54",
         1

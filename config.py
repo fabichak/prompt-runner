@@ -48,19 +48,24 @@ DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
 # Model Configuration
 HIGH_LORA = "wan2.2_high_t2v.safetensors"
 LOW_LORA = "wan2.2_low_t2v.safetensors"
-HIGH_MODEL = "Wan2.2_HIGH_Low_Noise_14B_VACE-Q8_0.gguf"
+HIGH_MODEL = "Wan2.2_T2V_High_Noise_14B_VACE-Q8_0.gguf"
 LOW_MODEL = "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf"
 
 # Node IDs for workflow modification
-NODE_LORA = "309"  # Also has sub-node 298
+NODE_LORA = "309:298"  # Also has sub-node 298
 NODE_MODEL = "4"
-NODE_REF_IMAGES = "144"
+NODE_VACE = "144"
+NODE_REF_IMAGES = "358"
 NODE_SAMPLES_54 = "54"
-NODE_LATENT_365 = "365"
+NODE_SAVE_LATENT = "365"
+NODE_LOAD_LATENT = "338"
 NODE_SAMPLES_341 = "341"
 NODE_FRAMES_VALUE = "19"
 NODE_START_FRAME = "348"
-NODE_VIDEO_OUTPUT = "344"
+NODE_VIDEO_COMBINE = "340"
+NODE_VIDEO_IMAGE_OUTPUT = "344"
+NODE_VIDEO_DECODE = "341"
+NODE_PROMPT = "53"
 
 # Combine workflow node IDs
 COMBINE_NODE_VIDEOS = "25"

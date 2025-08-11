@@ -15,7 +15,7 @@ from services.service_factory import ServiceFactory
 from services.dry_run_manager import is_dry_run, dry_run_manager
 from utils.job_planner import JobPlanner
 from config import (
-    NODE_VIDEO_OUTPUT, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
+    NODE_VIDEO_IMAGE_OUTPUT, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
     RETRY_DELAY, JSON_WORKFLOW_FILE, COMBINE_WORKFLOW_FILE, SERVER_ADDRESS
 )
 
