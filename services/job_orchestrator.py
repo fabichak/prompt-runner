@@ -12,7 +12,7 @@ from models.job import RenderJob, CombineJob, JobType, JobStatus
 from models.job_result import JobResult
 from models.prompt_data import PromptData
 from services.service_factory import ServiceFactory
-from services.dry_run_manager import is_dry_run
+from services.dry_run_manager import is_dry_run, dry_run_manager
 from utils.job_planner import JobPlanner
 from config import (
     NODE_VIDEO_OUTPUT, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
@@ -50,6 +50,10 @@ class JobOrchestrator:
             True if successful, False otherwise
         """
         try:
+            # Set video name for dry-run organized storage
+            if is_dry_run():
+                dry_run_manager.set_current_video_name(prompt_data.video_name)
+            
             # Connect to ComfyUI
             if not self.comfyui_client.connect():
                 logger.error("Failed to connect to ComfyUI")

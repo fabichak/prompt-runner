@@ -49,8 +49,8 @@ class MockComfyUIClient:
             prompt_id = str(uuid.uuid4())
         
         try:
-            # Simulate the HTTP request payload
-            payload = {
+            # Create the EXACT HTTP payload that would be sent to ComfyUI
+            http_payload = {
                 "prompt": workflow,
                 "client_id": self.client_id,
                 "prompt_id": prompt_id
@@ -58,23 +58,33 @@ class MockComfyUIClient:
             
             # Store for simulation
             self.queued_prompts[prompt_id] = {
-                "payload": payload,
+                "payload": http_payload,
                 "queued_at": time.time(),
                 "status": "queued"
             }
             
-            # Save workflow to temp folder
+            # Create comprehensive job info for saving
             job_info = {
-                "type": "render" if "class_type" in str(workflow) else "unknown",
+                "job_type": self._determine_job_type(workflow),
                 "prompt_id": prompt_id,
                 "client_id": self.client_id,
                 "nodes_count": len(workflow) if isinstance(workflow, dict) else 0,
-                "modifications": self._detect_modifications(workflow)
+                "modifications": self._detect_modifications(workflow),
+                "job_number": self._extract_job_number(workflow),
+                "video_name": self._get_current_video_name(workflow),
+                "frames_to_render": self._extract_frames(workflow)
             }
             
-            workflow_filename = dry_run_manager.save_workflow(workflow, job_info)
+            # Save complete ComfyUI HTTP payload using enhanced method
+            workflow_filename = dry_run_manager.save_complete_comfyui_payload(
+                http_payload, 
+                job_info, 
+                self.server_address
+            )
             
             logger.info(f"🎬 [DRY-RUN] Simulated queuing prompt {prompt_id[:8]}... → {workflow_filename}")
+            logger.info(f"📄 Complete HTTP payload saved with {len(workflow)} nodes")
+            
             return prompt_id
                 
         except Exception as e:
@@ -197,6 +207,112 @@ class MockComfyUIClient:
                         modifications.append(f"Reference image: {inputs['image']}")
         
         return modifications
+    
+    def _get_current_video_name(self, workflow: Dict[str, Any]) -> str:
+        """Get current video name from dry_run_manager or extract from workflow"""
+        # First try to get from dry_run_manager if set
+        if hasattr(dry_run_manager, 'current_video_name') and dry_run_manager.current_video_name:
+            return dry_run_manager.current_video_name
+        
+        # Otherwise, extract from workflow
+        return self._extract_video_name(workflow)
+    
+    def _determine_job_type(self, workflow: Dict[str, Any]) -> str:
+        """Determine job type from workflow structure"""
+        if not isinstance(workflow, dict):
+            return "unknown"
+        
+        # Look for combine-specific nodes or patterns
+        for node_id, node in workflow.items():
+            if isinstance(node, dict):
+                class_type = node.get("class_type", "")
+                if "Combine" in class_type or "Concat" in class_type:
+                    return "combine"
+                # Check for video input nodes suggesting a combine operation
+                if "inputs" in node and "video" in str(node.get("inputs", {})).lower():
+                    if len(workflow) < 20:  # Combine workflows are typically smaller
+                        return "combine"
+        
+        # Default to render for complex workflows
+        return "render" if len(workflow) > 10 else "unknown"
+    
+    def _extract_job_number(self, workflow: Dict[str, Any]) -> int:
+        """Extract job number from workflow if available"""
+        if not isinstance(workflow, dict):
+            return 0
+        
+        # Look for job number in common locations
+        for node_id, node in workflow.items():
+            if isinstance(node, dict) and "inputs" in node:
+                inputs = node["inputs"]
+                if "job_number" in inputs:
+                    try:
+                        return int(inputs["job_number"])
+                    except (ValueError, TypeError):
+                        pass
+                if "start_frame" in inputs:
+                    try:
+                        # Estimate job number from start frame (assuming 101 frames per job)
+                        return int(inputs["start_frame"]) // 101 + 1
+                    except (ValueError, TypeError):
+                        pass
+        
+        return 0
+    
+    def _extract_video_name(self, workflow: Dict[str, Any]) -> str:
+        """Extract video name from workflow if available"""
+        if not isinstance(workflow, dict):
+            return "unknown"
+        
+        # Look for video name or filename patterns
+        for node_id, node in workflow.items():
+            if isinstance(node, dict) and "inputs" in node:
+                inputs = node["inputs"]
+                
+                # Check for filename or video name inputs
+                for key, value in inputs.items():
+                    if isinstance(value, str):
+                        if "video_name" in key.lower():
+                            return value
+                        if key in ["filename", "filename_prefix"] and value:
+                            return value
+                        # Look for video file patterns
+                        if any(ext in value.lower() for ext in ['.mp4', '.avi', '.mov']):
+                            return value.split('.')[0]
+        
+        return "unknown"
+    
+    def _extract_frames(self, workflow: Dict[str, Any]) -> int:
+        """Extract frame count from workflow if available"""
+        if not isinstance(workflow, dict):
+            return 101  # Default frame count
+        
+        # Look for frame count in common node IDs
+        for node_id, node in workflow.items():
+            if isinstance(node, dict) and "inputs" in node:
+                inputs = node["inputs"]
+                
+                # Check frame-related inputs
+                if node_id == "19" and "value" in inputs:  # Common frame count node
+                    try:
+                        return int(inputs["value"])
+                    except (ValueError, TypeError):
+                        pass
+                
+                if "frames" in inputs:
+                    try:
+                        return int(inputs["frames"])
+                    except (ValueError, TypeError):
+                        pass
+                        
+                if "length" in inputs or "duration" in inputs:
+                    try:
+                        value = inputs.get("length") or inputs.get("duration")
+                        return int(value)
+                    except (ValueError, TypeError):
+                        pass
+        
+        return 101  # Default frame count
     
     def _simulate_outputs(self, prompt_id: str) -> Dict[str, Any]:
         """Simulate ComfyUI output generation"""

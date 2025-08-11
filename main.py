@@ -16,6 +16,7 @@ import config
 config.CLIENT_ID = str(uuid.uuid4())
 
 from models.prompt_data import PromptData
+from models.job import JobType
 from services.job_orchestrator import JobOrchestrator
 from services.service_factory import ServiceFactory
 from services.dry_run_manager import enable_dry_run, dry_run_manager
@@ -26,12 +27,24 @@ from utils.job_planner import JobPlanner
 def setup_logging(log_level: str = "INFO"):
     """Set up logging configuration"""
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    
+    # Determine log file location
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_filename = f"prompt_runner_{timestamp}.log"
+    
+    # Use dry-run logs directory if in dry-run mode
+    logs_dir = dry_run_manager.get_logs_directory()
+    if logs_dir:
+        log_filepath = logs_dir / log_filename
+    else:
+        log_filepath = Path(log_filename)
+    
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
         format=log_format,
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler(f"prompt_runner_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
+            logging.FileHandler(str(log_filepath))
         ]
     )
 
@@ -178,6 +191,30 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
             "total_combines": len(combine_jobs)
         })
         
+        # Generate workflows for dry-run analysis
+        logger.info("🔧 Generating workflows for dry-run analysis...")
+        workflow_manager = ServiceFactory.create_workflow_manager(
+            Path("prompt.json"), 
+            Path("combine.json")
+        )
+        
+        # Generate render job workflows
+        for job in render_jobs:
+            try:
+                if job.job_type == JobType.HIGH:
+                    workflow_manager.modify_for_high_job(job)
+                else:
+                    workflow_manager.modify_for_low_job(job)
+            except Exception as e:
+                logger.warning(f"Could not generate workflow for job {job.job_number}: {e}")
+        
+        # Generate combine job workflows  
+        for job in combine_jobs:
+            try:
+                workflow_manager.create_combine_workflow(job)
+            except Exception as e:
+                logger.warning(f"Could not generate combine workflow for job {job.combine_number}: {e}")
+        
         logger.info("🎭 DRY RUN - Jobs planned but not executed")
         logger.info(f"📊 Render jobs: {len(render_jobs)}, Combine jobs: {len(combine_jobs)}")
         return True
@@ -214,6 +251,12 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
 def main():
     """Main entry point"""
     args = parse_arguments()
+    
+    # Enable dry-run mode if requested (before logging setup)
+    if args.dry_run:
+        enable_dry_run()
+    
+    # Setup logging (after dry-run mode is potentially enabled)
     setup_logging(args.log_level)
     logger = logging.getLogger(__name__)
     
@@ -222,9 +265,7 @@ def main():
     logger.info(f"Client ID: {config.CLIENT_ID}")
     logger.info("=" * 80)
     
-    # Enable dry-run mode if requested
     if args.dry_run:
-        enable_dry_run()
         logger.info("🎭 DRY-RUN MODE ENABLED")
     
     # Show RunPod info if available
