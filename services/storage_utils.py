@@ -144,10 +144,10 @@ class StorageManager:
             if final_dir.exists():
                 shutil.rmtree(final_dir)
     
-    def zip_and_upload_output(self, promptName: str) -> bool:
+    def zip_and_upload_output(self, promptName: str, job_number: int) -> bool:
         """Zip final output and upload to GCS"""
         try:
-            final_video = self.get_final_path(promptName)
+            final_video = Path(self.get_combined_full_path(promptName, job_number))
             if not final_video.exists():
                 logger.error(f"Final video not found: {final_video}")
                 return False

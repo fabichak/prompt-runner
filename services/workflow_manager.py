@@ -12,7 +12,7 @@ from config import (
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
     NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
     NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS, COMBINE_NODE_LOAD_VIDEO,
-    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, NODE_FILENAME_REPLACER, STEPS
+    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, STEPS
 )
 from services.service_factory import ServiceFactory
 
@@ -57,7 +57,7 @@ class WorkflowManager:
         
         # Set LoRA to HIGH model (Node 309 and sub-node 298)
         if NODE_LORA in workflow:
-            workflow[NODE_LORA]["inputs"]["lora_name"] = HIGH_LORA
+            workflow[NODE_LORA]["inputs"]["lora"] = HIGH_LORA
         
         # Set model to HIGH noise model
         if NODE_MODEL in workflow:
@@ -147,7 +147,7 @@ class WorkflowManager:
         
         # Set LoRA to LOW model
         if NODE_LORA in workflow:
-            workflow[NODE_LORA]["inputs"]["lora_name"] = LOW_LORA
+            workflow[NODE_LORA]["inputs"]["lora"] = LOW_LORA
         
         # Set model to LOW noise model
         if NODE_MODEL in workflow:
@@ -174,7 +174,6 @@ class WorkflowManager:
         # Set start frame
         if NODE_VIDEO_COMBINE in workflow:
             workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
-            workflow[NODE_FILENAME_REPLACER]["inputs"]["new_file_name"] = job.video_output_path
 
         if NODE_SAMPLES_54 in workflow:
             workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed

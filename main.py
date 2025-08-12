@@ -232,7 +232,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Upload to GCS if requested
         if not args.no_upload:
             storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(promptName)
+            upload_success = storage.zip_and_upload_output(promptName, len(combine_jobs))
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
             else:

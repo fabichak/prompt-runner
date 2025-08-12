@@ -67,11 +67,11 @@
   },
   "8": {
     "inputs": {
-      "blocks_to_swap": 20,
+      "blocks_to_swap": 5,
       "offload_img_emb": false,
       "offload_txt_emb": false,
       "use_non_blocking": false,
-      "vace_blocks_to_swap": 10
+      "vace_blocks_to_swap": 5
     },
     "class_type": "WanVideoBlockSwap",
     "_meta": {
@@ -429,36 +429,6 @@
     "class_type": "CustomLoadLatent",
     "_meta": {
       "title": "CustomLoadLatent"
-    }
-  },
-  "371": {
-    "inputs": {
-      "file_path": [
-        "373",
-        0
-      ],
-      "new_file_name": "path",
-      "any": [
-        "340",
-        0
-      ]
-    },
-    "class_type": "FileNameReplacer",
-    "_meta": {
-      "title": "replace string"
-    }
-  },
-  "373": {
-    "inputs": {
-      "index": 0,
-      "filenames": [
-        "340",
-        0
-      ]
-    },
-    "class_type": "VHS_SelectFilename",
-    "_meta": {
-      "title": "Select Filename 🎥🅥🅗🅢"
     }
   },
   "309:300": {
