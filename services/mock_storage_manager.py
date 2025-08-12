@@ -77,6 +77,12 @@ class MockStorageManager:
         dir_path = self.get_directory(promptName, "videos")
         return dir_path / f"job_{job_number:03d}.mp4"
     
+    def get_combined_full_path(self, promptName: str, job_number: int) -> Path:
+        return f"{self.get_combined_path(promptName, job_number)}_00001.mp4"
+    
+    def get_video_full_path(self, promptName: str, job_number: int) -> Path:
+        return f"{self.get_video_path(promptName, job_number)}_00001.mp4"
+    
     def get_reference_path(self, promptName: str, job_number: int) -> Path:
         """Get path for reference image"""
         dir_path = self.get_directory(promptName, "references")

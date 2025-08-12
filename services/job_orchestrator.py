@@ -15,7 +15,7 @@ from services.service_factory import ServiceFactory
 from services.dry_run_manager import is_dry_run, dry_run_manager
 from utils.job_planner import JobPlanner
 from config import (
-    NODE_VIDEO_IMAGE_OUTPUT, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
+    REFERENCE_FRAME_OFFSET, MAX_RETRIES,
     RETRY_DELAY, JSON_WORKFLOW_FILE, COMBINE_WORKFLOW_FILE, SERVER_ADDRESS
 )
 
@@ -159,7 +159,7 @@ class JobOrchestrator:
                 job.status = JobStatus.COMPLETED
                 
                 # Extract reference image if this is a LOW job
-                if job.job_type == JobType.LOW and job.job_number >= 2:
+                if job.job_type == JobType.LOW:
                     ref_success = self.extract_reference_image(job)
                     if not ref_success:
                         logger.warning(f"Failed to extract reference image for job {job.job_number}")
@@ -306,7 +306,7 @@ class JobOrchestrator:
                 logger.error("No video output path for reference extraction")
                 return False
             
-            video_path = Path(job.video_output_path)
+            video_path = Path(job.video_output_full_path)
             if not video_path.exists():
                 logger.error(f"Video not found: {video_path}")
                 return False
@@ -362,22 +362,22 @@ class JobOrchestrator:
                 logger.error("No combine jobs to create final output")
                 return False
             
-            # Get the last combined video
-            last_combine = combine_jobs[-1]
-            last_combined_path = Path(last_combine.output_path)
+            # # Get the last combined video
+            # last_combine = combine_jobs[-1]
+            # last_combined_path = Path(last_combine.output_path)
             
-            if not last_combined_path.exists():
-                # Try in ComfyUI output
-                last_combined_path = Path(f"/workspace/ComfyUI/output") / last_combined_path.name
-                if not last_combined_path.exists():
-                    logger.error(f"Last combined video not found: {last_combined_path}")
-                    return False
+            # if not last_combined_path.exists():
+            #     # Try in ComfyUI output
+            #     last_combined_path = Path(f"/workspace/ComfyUI/output") / last_combined_path.name
+            #     if not last_combined_path.exists():
+            #         logger.error(f"Last combined video not found: {last_combined_path}")
+            #         return False
             
-            # Copy to final output
-            final_path = self.storage.get_final_path(self.current_prompt_name)
-            shutil.copy2(last_combined_path, final_path)
+            # # Copy to final output
+            # final_path = self.storage.get_final_path(self.current_prompt_name)
+            # shutil.copy2(last_combined_path, final_path)
             
-            logger.info(f"Created final output: {final_path}")
+            # logger.info(f"Created final output: {final_path}")
             return True
             
         except Exception as e:

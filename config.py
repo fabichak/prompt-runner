@@ -43,7 +43,7 @@ STATE_DIR = "state"
 GCS_BUCKET_PATH = "gs://aiof-saved-files/"
 
 # Job Configuration
-FRAMES_TO_RENDER = 101  # Constant frames per chunk
+FRAMES_TO_RENDER = 21  # Constant frames per chunk
 DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
 
 # Model Configuration
@@ -58,19 +58,20 @@ NODE_MODEL = "4"
 NODE_VACE = "144"
 NODE_REF_IMAGES = "358"
 NODE_SAMPLES_54 = "54"
-NODE_SAVE_LATENT = "365"
-NODE_LOAD_LATENT = "338"
+NODE_SAVE_LATENT = "366"
+NODE_LOAD_LATENT = "367"
 NODE_SAMPLES_341 = "341"
 NODE_FRAMES_VALUE = "19"
 NODE_START_FRAME = "348"
 NODE_VIDEO_COMBINE = "340"
-NODE_VIDEO_IMAGE_OUTPUT = "344"
 NODE_VIDEO_DECODE = "341"
 NODE_PROMPT = "53"
+NODE_FILENAME_REPLACER = "371"
 
 # Combine workflow node IDs
 COMBINE_NODE_VIDEOS = "25"
 COMBINE_NODE_IMAGE2 = "30"
+COMBINE_NODE_LOAD_VIDEO = "40"
 COMBINE_NODE_IMAGES = "14"
 
 # Retry Configuration
@@ -79,6 +80,9 @@ RETRY_DELAY = 5  # seconds
 
 # Reference Image Configuration
 REFERENCE_FRAME_OFFSET = 10  # Extract frame at (frames_to_render - 10)
+STEPS = 8
+HIGH_STEPS = 4
+
 
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown

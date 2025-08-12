@@ -11,8 +11,8 @@ from config import (
     HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL,
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
     NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
-    NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE,
-    NODE_VIDEO_IMAGE_OUTPUT, COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES
+    NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS, COMBINE_NODE_LOAD_VIDEO,
+    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, NODE_FILENAME_REPLACER, STEPS
 )
 from services.service_factory import ServiceFactory
 
@@ -78,14 +78,22 @@ class WorkflowManager:
             del workflow[NODE_SAMPLES_54]["inputs"]["samples"]
             logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
         
+         # Delete samples nodes for HIGH jobs
         if NODE_VIDEO_DECODE in workflow:
             del workflow[NODE_VIDEO_DECODE]["inputs"]["samples"]
-            logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
+            logger.debug(f"Deleted samples node {NODE_VIDEO_DECODE} for HIGH job")
 
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
             workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
             workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
+
+        if NODE_SAMPLES_54 in workflow:
+            workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
+            workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = 0
+            workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = HIGH_STEPS
+            workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
+    
         
         # Set start frame (skip-n-frames)
         if NODE_START_FRAME in workflow:
@@ -93,11 +101,7 @@ class WorkflowManager:
         
         #define folder to save latent
         if NODE_SAVE_LATENT in workflow:
-            workflow[NODE_SAVE_LATENT]["inputs"]["folder_path"] = job.latent_dir_path
-            workflow[NODE_SAVE_LATENT]["inputs"]["subfolder_name"] = ""
-            workflow[NODE_SAVE_LATENT]["inputs"]["filename"] = f"job_{job.job_number:03d}.latent"
-            logger.debug(f"Set folder to save latent: {job.latent_dir_path}/job_{job.job_number:03d}.latent")
-
+            workflow[NODE_SAVE_LATENT]["inputs"]["file_path"] = job.latent_path
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
@@ -117,6 +121,7 @@ class WorkflowManager:
                 "noise_model": HIGH_MODEL,
                 "has_reference_image": job.reference_image_path is not None,
                 "reference_image_path": job.reference_image_path,
+                "latent_path": job.latent_path,
                 "modifications": [
                     f"LoRA: {HIGH_LORA}",
                     f"Model: {HIGH_MODEL}",
@@ -155,7 +160,7 @@ class WorkflowManager:
 
         # set folder to load latent
         if NODE_LOAD_LATENT in workflow:
-            workflow[NODE_LOAD_LATENT]["inputs"]["folder_path"] = job.latent_path
+            workflow[NODE_LOAD_LATENT]["inputs"]["file_path"] = job.latent_path
 
         # Set frames to render
         if NODE_FRAMES_VALUE in workflow:
@@ -169,10 +174,20 @@ class WorkflowManager:
         # Set start frame
         if NODE_VIDEO_COMBINE in workflow:
             workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
-            workflow[NODE_VIDEO_IMAGE_OUTPUT]["inputs"]["filename_prefix"] = job.video_output_path
+            workflow[NODE_FILENAME_REPLACER]["inputs"]["new_file_name"] = job.video_output_path
+
+        if NODE_SAMPLES_54 in workflow:
+            workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
+            workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = HIGH_STEPS
+            workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = -1
+            workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
 
         #load image by setting image_path
-        if job.job_number > 2:
+        if job.job_number <= 2:
+            # Delete reference images node for first two jobs
+            del workflow[NODE_VACE]["inputs"]["ref_images"]
+            logger.debug(f"Deleted reference images node for job {job.job_number}")
+        else:
             workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = job.reference_image_path
             logger.debug(f"Set reference image: {job.reference_image_path}")
 
@@ -218,9 +233,8 @@ class WorkflowManager:
         
         # Set current video input (node 25)
         if COMBINE_NODE_VIDEOS in workflow:
-            if "inputs" in workflow[COMBINE_NODE_VIDEOS]:
-                workflow[COMBINE_NODE_VIDEOS]["inputs"]["videos"] = combine_job.input_video_path
-                logger.debug(f"Set input video: {combine_job.input_video_path}")
+            workflow[COMBINE_NODE_VIDEOS]["inputs"]["videos"] = combine_job.input_video_path
+            logger.debug(f"Set input video: {combine_job.input_video_path}")
         
         # Handle previous combined video
         if combine_job.combine_number == 1:
@@ -231,15 +245,13 @@ class WorkflowManager:
             
             # Set node 14 inputs.images to [33, 0] for first combine
             if COMBINE_NODE_IMAGES in workflow:
-                if "inputs" in workflow[COMBINE_NODE_IMAGES]:
-                    workflow[COMBINE_NODE_IMAGES]["inputs"]["images"] = [33, 0]
-                    logger.debug("Set images input to [33, 0] for first combine")
+                workflow[COMBINE_NODE_IMAGES]["inputs"]["images"] = [33, 0]
+                logger.debug("Set images input to [33, 0] for first combine")
         else:
             # Subsequent combines - set previous combined video
-            if COMBINE_NODE_IMAGE2 in workflow and combine_job.previous_combined_path:
-                if "inputs" in workflow[COMBINE_NODE_IMAGE2]:
-                    workflow[COMBINE_NODE_IMAGE2]["inputs"]["image_2"] = combine_job.previous_combined_path
-                    logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
+            if COMBINE_NODE_LOAD_VIDEO in workflow and combine_job.previous_combined_path:
+                workflow[COMBINE_NODE_LOAD_VIDEO]["inputs"]["video"] = combine_job.previous_combined_path
+                logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
                 
         logger.info(f"Created combine workflow for job #{combine_job.combine_number}")
         

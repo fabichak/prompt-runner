@@ -1,0 +1,71 @@
+{
+  "job_type": "combine",
+  "timestamp": "2025-08-12T11:39:53.902246",
+  "metadata": {
+    "video_name": "2025-05-02_19-39-31_UTC",
+    "total_combines": 5
+  },
+  "total_jobs": 5,
+  "jobs": [
+    {
+      "job_id": "e183bf20-1c43-410d-a6fb-0b91fcd3b91a",
+      "job_number": 0,
+      "job_type": "combine",
+      "frames_to_render": 0,
+      "start_frame": 0,
+      "video_name": "2025-05-02_19-39-31_UTC",
+      "positive_prompt": "",
+      "negative_prompt": "",
+      "latent_path": null,
+      "reference_image_path": null
+    },
+    {
+      "job_id": "408411b7-1cf8-4bcc-ab2e-15f4dc02ac88",
+      "job_number": 0,
+      "job_type": "combine",
+      "frames_to_render": 0,
+      "start_frame": 0,
+      "video_name": "2025-05-02_19-39-31_UTC",
+      "positive_prompt": "",
+      "negative_prompt": "",
+      "latent_path": null,
+      "reference_image_path": null
+    },
+    {
+      "job_id": "fbea5c8e-e73f-425c-b9f8-871abd839d3f",
+      "job_number": 0,
+      "job_type": "combine",
+      "frames_to_render": 0,
+      "start_frame": 0,
+      "video_name": "2025-05-02_19-39-31_UTC",
+      "positive_prompt": "",
+      "negative_prompt": "",
+      "latent_path": null,
+      "reference_image_path": null
+    },
+    {
+      "job_id": "991b8a6e-2ceb-49d9-9a7a-5a4c320fea50",
+      "job_number": 0,
+      "job_type": "combine",
+      "frames_to_render": 0,
+      "start_frame": 0,
+      "video_name": "2025-05-02_19-39-31_UTC",
+      "positive_prompt": "",
+      "negative_prompt": "",
+      "latent_path": null,
+      "reference_image_path": null
+    },
+    {
+      "job_id": "4b84d3a4-fa16-41a7-8877-055ecaa578be",
+      "job_number": 0,
+      "job_type": "combine",
+      "frames_to_render": 0,
+      "start_frame": 0,
+      "video_name": "2025-05-02_19-39-31_UTC",
+      "positive_prompt": "",
+      "negative_prompt": "",
+      "latent_path": null,
+      "reference_image_path": null
+    }
+  ]
+}

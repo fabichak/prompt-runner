@@ -1,0 +1,93 @@
+2025-08-12 12:36:11,591 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,592 - __main__ - INFO - PROMPT RUNNER V2 - Starting
+2025-08-12 12:36:11,592 - __main__ - INFO - Client ID: ae62b444-dea8-459b-a58e-538b743c21b1
+2025-08-12 12:36:11,592 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,593 - __main__ - INFO - 🎭 DRY-RUN MODE ENABLED
+2025-08-12 12:36:11,595 - services.service_factory - INFO - 🎭 Creating MockRunPodManager for dry-run mode
+2025-08-12 12:36:11,595 - services.mock_runpod_manager - INFO - ℹ️ [DRY-RUN] Simulated RunPod instance info: {'pod_id': 'dry-run-pod-12345', 'pod_hostname': 'dry-run-host.runpod.io', 'gpu_count': '1', 'cpu_count': '8', 'mem_gb': '32', 'public_ip': '203.0.113.1', 'api_key': 'SIMULATED'}
+2025-08-12 12:36:11,595 - __main__ - INFO - RunPod Instance: {'pod_id': 'dry-run-pod-12345', 'pod_hostname': 'dry-run-host.runpod.io', 'gpu_count': '1', 'cpu_count': '8', 'mem_gb': '32', 'public_ip': '203.0.113.1', 'api_key': 'SIMULATED'}
+2025-08-12 12:36:11,595 - services.mock_runpod_manager - INFO - 💓 [DRY-RUN] Simulated system health - CPU: 15.5%, RAM: 45.2%, Disk: 32.1%
+2025-08-12 12:36:11,598 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-12 12:36:11,598 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-12 12:36:11,600 - services.mock_storage_manager - INFO - 💽 [DRY-RUN] Disk space check for prompt '_global_check': 276.0GB available
+2025-08-12 12:36:11,603 - utils.file_parser - INFO - Successfully parsed prompt file: PromptData(video=2025-05-02_19-39-31_UTC, frames=52)
+2025-08-12 12:36:11,603 - utils.file_parser - INFO - Found 1 valid prompt files
+2025-08-12 12:36:11,603 - __main__ - INFO - Found 1 prompt file(s) to process
+2025-08-12 12:36:11,606 - services.service_factory - INFO - 🎭 Creating MockComfyUIClient for dry-run mode
+2025-08-12 12:36:11,606 - services.mock_comfyui_client - INFO - 🎭 MockComfyUIClient initialized for 127.0.0.1:8188
+2025-08-12 12:36:11,606 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-12 12:36:11,606 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-12 12:36:11,606 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-12 12:36:11,606 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-12 12:36:11,607 - services.workflow_manager - INFO - Loaded workflow from prompt.json
+2025-08-12 12:36:11,609 - services.workflow_manager - INFO - Loaded workflow from combine.json
+2025-08-12 12:36:11,609 - __main__ - INFO - 
+Processing: prompt_files/1.txt
+2025-08-12 12:36:11,610 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,610 - __main__ - INFO - NAME: 20250812_123611
+2025-08-12 12:36:11,610 - __main__ - INFO - PROCESSING: 2025-05-02_19-39-31_UTC
+2025-08-12 12:36:11,610 - __main__ - INFO - Total frames: 52
+2025-08-12 12:36:11,610 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,610 - __main__ - INFO - Frames per chunk: 21
+2025-08-12 12:36:11,610 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-12 12:36:11,610 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-12 12:36:11,610 - utils.job_planner - INFO - Planning 3 job pairs for 52 total frames (21 per chunk)
+2025-08-12 12:36:11,639 - utils.job_planner - INFO - ============================================================
+2025-08-12 12:36:11,639 - utils.job_planner - INFO - JOB EXECUTION PLAN
+2025-08-12 12:36:11,640 - utils.job_planner - INFO - ============================================================
+2025-08-12 12:36:11,640 - utils.job_planner - INFO - Total render jobs: 6
+2025-08-12 12:36:11,640 - utils.job_planner - INFO - Total combine jobs: 3
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(HIGH #1, frames 0-21) [ref: output/prompt-runner/20250812_123611/references/job_000_ref.png]
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(LOW #2, frames 0-21) [ref: output/prompt-runner/20250812_123611/references/job_000_ref.png]
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(HIGH #3, frames 21-42) [ref: output/prompt-runner/20250812_123611/references/job_002_ref.png]
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(LOW #4, frames 21-42) [ref: output/prompt-runner/20250812_123611/references/job_002_ref.png]
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(HIGH #5, frames 42-52) [ref: output/prompt-runner/20250812_123611/references/job_004_ref.png]
+2025-08-12 12:36:11,640 - utils.job_planner - INFO -   RenderJob(LOW #6, frames 42-52) [ref: output/prompt-runner/20250812_123611/references/job_004_ref.png]
+2025-08-12 12:36:11,641 - utils.job_planner - INFO - ----------------------------------------
+2025-08-12 12:36:11,641 - utils.job_planner - INFO -   CombineJob(#1 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250812_123611/videos/job_002.mp4 -> output/prompt-runner/20250812_123611/combined/combined_001.mp4
+2025-08-12 12:36:11,641 - utils.job_planner - INFO -   CombineJob(#2 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250812_123611/videos/job_004.mp4 + output/prompt-runner/20250812_123611/combined/combined_001.mp4 -> output/prompt-runner/20250812_123611/combined/combined_002.mp4
+2025-08-12 12:36:11,641 - utils.job_planner - INFO -   CombineJob(#3 for 2025-05-02_19-39-31_UTC): output/prompt-runner/20250812_123611/videos/job_006.mp4 + output/prompt-runner/20250812_123611/combined/combined_002.mp4 -> output/prompt-runner/20250812_123611/combined/combined_003.mp4
+2025-08-12 12:36:11,641 - utils.job_planner - INFO - ============================================================
+2025-08-12 12:36:11,645 - __main__ - INFO - 🔧 Generating workflows for dry-run analysis...
+2025-08-12 12:36:11,645 - services.service_factory - INFO - 🗄️ Creating MockStorageManager for dry-run mode
+2025-08-12 12:36:11,645 - services.mock_storage_manager - INFO - 🗄️ MockStorageManager initialized
+2025-08-12 12:36:11,646 - services.workflow_manager - INFO - Loaded workflow from prompt.json
+2025-08-12 12:36:11,647 - services.workflow_manager - INFO - Loaded workflow from combine.json
+2025-08-12 12:36:11,647 - services.workflow_manager - INFO - Modified workflow for HIGH job #1
+2025-08-12 12:36:11,649 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_001_high_noise_render.json (high_noise_render job)
+2025-08-12 12:36:11,649 - services.workflow_manager - INFO - Modified workflow for LOW job #2
+2025-08-12 12:36:11,651 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_002_low_noise_render.json (low_noise_render job)
+2025-08-12 12:36:11,651 - services.workflow_manager - INFO - Modified workflow for HIGH job #3
+2025-08-12 12:36:11,652 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_003_high_noise_render.json (high_noise_render job)
+2025-08-12 12:36:11,653 - services.workflow_manager - INFO - Modified workflow for LOW job #4
+2025-08-12 12:36:11,654 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_004_low_noise_render.json (low_noise_render job)
+2025-08-12 12:36:11,654 - services.workflow_manager - INFO - Modified workflow for HIGH job #5
+2025-08-12 12:36:11,656 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_005_high_noise_render.json (high_noise_render job)
+2025-08-12 12:36:11,656 - services.workflow_manager - INFO - Modified workflow for LOW job #6
+2025-08-12 12:36:11,657 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_006_low_noise_render.json (low_noise_render job)
+2025-08-12 12:36:11,658 - services.workflow_manager - INFO - Created combine workflow for job #1
+2025-08-12 12:36:11,659 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_007_combine.json (combine job)
+2025-08-12 12:36:11,659 - services.workflow_manager - INFO - Created combine workflow for job #2
+2025-08-12 12:36:11,663 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_008_combine.json (combine job)
+2025-08-12 12:36:11,663 - services.workflow_manager - INFO - Created combine workflow for job #3
+2025-08-12 12:36:11,665 - services.dry_run_manager - INFO - 📝 Saved workflow: workflow_009_combine.json (combine job)
+2025-08-12 12:36:11,665 - __main__ - INFO - 🎭 DRY RUN - Jobs planned but not executed
+2025-08-12 12:36:11,665 - __main__ - INFO - 📊 Render jobs: 6, Combine jobs: 3
+2025-08-12 12:36:11,665 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,665 - __main__ - INFO - PROMPT RUNNER V2 - Complete
+2025-08-12 12:36:11,666 - __main__ - INFO - Successful: 1
+2025-08-12 12:36:11,666 - __main__ - INFO - Failed: 0
+2025-08-12 12:36:11,666 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,721 - __main__ - INFO - Disk usage for last prompt: {'latents': 0.0, 'videos': 0.0, 'references': 0.0, 'combined': 0.0, 'final': 0.0, 'state': 0.0, 'total': 0.0, 'dry_run_temp': 0.00011071190237998962}
+2025-08-12 12:36:11,721 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,721 - __main__ - INFO - DRY-RUN SUMMARY
+2025-08-12 12:36:11,721 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,722 - __main__ - INFO - 🗂️ Temp directory: N/A
+2025-08-12 12:36:11,722 - __main__ - INFO - 📄 Workflows generated: 9
+2025-08-12 12:36:11,722 - __main__ - INFO - ☁️ Simulated GCS uploads: 0
+2025-08-12 12:36:11,722 - __main__ - INFO - 📁 Simulated file copies: 0
+2025-08-12 12:36:11,722 - __main__ - INFO - ================================================================================
+2025-08-12 12:36:11,723 - services.dry_run_manager - INFO - 🗂️ Dry-run files preserved at: output/dry-run/session_20250812_123611
+2025-08-12 12:36:11,723 - services.dry_run_manager - INFO - 📊 Session contained 9 workflows and 0 HTTP payloads
+2025-08-12 12:36:11,742 - services.dry_run_manager - INFO - 💾 Total dry-run output size: 0.11 MB
+2025-08-12 12:36:11,742 - __main__ - INFO - RunPod instance will remain running

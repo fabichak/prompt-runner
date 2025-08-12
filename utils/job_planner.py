@@ -42,6 +42,8 @@ class JobPlanner:
         
         self.storage.ensure_directories(self.promptName)
 
+        random_seed = 1013166398531279
+
         for chunk_idx in range(num_chunks):
             # Calculate frames for this chunk
             remaining_frames = total_frames - current_frame
@@ -52,12 +54,12 @@ class JobPlanner:
                 prompt_name=self.promptName,
                 job_type=JobType.HIGH,
                 job_number=job_number,
+                seed=random_seed,
                 start_frame=current_frame,
                 frames_to_render=chunk_frames,
                 video_name=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
-                latent_dir_path=self.storage.get_directory(self.promptName, "latents"),
                 latent_path=self.storage.get_latent_path(self.promptName, job_number),
                 reference_image_path= self.storage.get_reference_path(self.promptName, job_number-1) #from job-1 low output, not used in job=1
             )
@@ -71,13 +73,15 @@ class JobPlanner:
                 job_type=JobType.LOW,
                 job_number=job_number,
                 start_frame=current_frame,
+                seed=random_seed,
                 frames_to_render=chunk_frames,
                 video_name=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
                 latent_path=self.storage.get_latent_path(self.promptName, job_number-1), #from the job-1 high output
                 reference_image_path= self.storage.get_reference_path(self.promptName, job_number-2), #from job-2 low output, not used in job=2
-                video_output_path=self.storage.get_video_path(self.promptName, job_number)
+                video_output_path=self.storage.get_video_path(self.promptName, job_number),
+                video_output_full_path=self.storage.get_video_full_path(self.promptName, job_number)
             )
             
             render_jobs.append(low_job)
@@ -96,14 +100,14 @@ class JobPlanner:
                     prompt_name=self.promptName,
                     combine_number=combine_number,
                     video_name=prompt_data.video_name,
-                    input_video_path=job.video_output_path,
+                    input_video_path=job.video_output_full_path,
                     previous_combined_path=previous_combined_path,
                     output_path=str(self.storage.get_combined_path(self.promptName, combine_number))
                 )
                 combine_jobs.append(combine_job)
                 
                 # Update previous path for next combine
-                previous_combined_path = combine_job.output_path
+                previous_combined_path = self.storage.get_combined_full_path(self.promptName, combine_number)
                 combine_number += 1
         
         # Log job plan summary

@@ -10,6 +10,7 @@ from typing import Dict, Any, Optional, Tuple
 import logging
 
 from config import SERVER_ADDRESS, MAX_RETRIES, RETRY_DELAY
+from services.dry_run_manager import PathJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class ComfyUIClient:
                 "client_id": self.client_id,
                 "prompt_id": prompt_id
             }
-            data = json.dumps(payload).encode('utf-8')
+            data = json.dumps(payload, indent=2, cls=PathJSONEncoder).encode('utf-8')
             req = urllib.request.Request(
                 f"http://{self.server_address}/prompt",
                 data=data,
@@ -104,7 +105,8 @@ class ComfyUIClient:
                         if data['data'].get('prompt_id') == prompt_id:
                             value = data['data'].get('value', 0)
                             max_val = data['data'].get('max', 100)
-                            logger.debug(f"Progress: {value}/{max_val}")
+                            node = data['data'].get('node')
+                            logger.debug(f"Progress {node}: {value}/{max_val}")
                             
             except websocket.WebSocketTimeoutException:
                 continue

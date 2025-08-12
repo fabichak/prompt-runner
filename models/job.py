@@ -25,6 +25,7 @@ class RenderJob:
     job_type: JobType = JobType.HIGH
     job_number: int = 0
     start_frame: int = 0
+    seed: int = 0
     frames_to_render: int = 101
     video_name: str = ""
     prompt_name: str = ""  # Session identifier for organizing files
@@ -34,6 +35,7 @@ class RenderJob:
     latent_path: Optional[str] = None
     reference_image_path: Optional[str] = None
     video_output_path: Optional[str] = None
+    video_output_full_path: Optional[str] = None
     
     # Status tracking
     status: JobStatus = JobStatus.PENDING

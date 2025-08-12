@@ -67,7 +67,10 @@ class StorageManager:
     def get_video_path(self, promptName: str, job_number: int) -> Path:
         """Get path for video file"""
         dir_path = self.get_directory(promptName, "videos")
-        return dir_path / f"job_{job_number:03d}.mp4"
+        return dir_path / f"job_{job_number:03d}"
+    
+    def get_video_full_path(self, promptName: str, job_number: int) -> Path:
+        return f"{self.get_video_path(promptName, job_number)}_00001.mp4"
     
     def get_reference_path(self, promptName: str, job_number: int) -> Path:
         """Get path for reference image"""
@@ -78,6 +81,9 @@ class StorageManager:
         """Get path for combined video at a specific stage"""
         dir_path = self.get_directory(promptName, "combined")
         return dir_path / f"combined_{stage:03d}.mp4"
+    
+    def get_combined_full_path(self, promptName: str, job_number: int) -> Path:
+        return f"{self.get_combined_path(promptName, job_number)}_00001.mp4"
     
     def get_final_path(self, promptName: str) -> Path:
         """Get path for final output video"""

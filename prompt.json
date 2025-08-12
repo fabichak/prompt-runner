@@ -67,11 +67,11 @@
   },
   "8": {
     "inputs": {
-      "blocks_to_swap": 5,
+      "blocks_to_swap": 20,
       "offload_img_emb": false,
       "offload_txt_emb": false,
       "use_non_blocking": false,
-      "vace_blocks_to_swap": 5
+      "vace_blocks_to_swap": 10
     },
     "class_type": "WanVideoBlockSwap",
     "_meta": {
@@ -124,26 +124,17 @@
   },
   "54": {
     "inputs": {
-      "steps": [
-        "288",
-        0
-      ],
+      "steps": 8,
       "cfg": 1.0000000000000002,
       "shift": 8,
-      "seed": [
-        "293",
-        0
-      ],
+      "seed": 1013166398531279,
       "force_offload": true,
       "scheduler": "dpm++_sde",
       "riflex_freq_index": 0,
       "denoise_strength": 1,
       "batched_cfg": false,
       "rope_function": "comfy",
-      "start_step": [
-        "289",
-        1
-      ],
+      "start_step": 0,
       "end_step": -1,
       "add_noise_to_samples": false,
       "model": [
@@ -159,7 +150,7 @@
         0
       ],
       "samples": [
-        "338",
+        "367",
         0
       ],
       "feta_args": [
@@ -296,18 +287,6 @@
       "title": "Depth Anything V2 - Relative"
     }
   },
-  "338": {
-    "inputs": {
-      "folder_path": "/workspace/ComfyUI/output/prompt-runner/latents",
-      "sort_by": "date",
-      "invert_order": false,
-      "pass_output": true
-    },
-    "class_type": "LoadLastLatent",
-    "_meta": {
-      "title": "Load Last Latent (CRT)"
-    }
-  },
   "340": {
     "inputs": {
       "frame_rate": 30,
@@ -350,31 +329,6 @@
     "class_type": "WanVideoDecode",
     "_meta": {
       "title": "WanVideo Decode"
-    }
-  },
-  "343": {
-    "inputs": {
-      "images": [
-        "341",
-        0
-      ]
-    },
-    "class_type": "CRTFirstLastFrameSelector",
-    "_meta": {
-      "title": "Get First & Last Frame (CRT)"
-    }
-  },
-  "344": {
-    "inputs": {
-      "filename_prefix": "test1/test-01-last",
-      "images": [
-        "343",
-        1
-      ]
-    },
-    "class_type": "SaveImage",
-    "_meta": {
-      "title": "Save Image"
     }
   },
   "348": {
@@ -446,8 +400,8 @@
       "start_index": 0,
       "num_frames": 1,
       "latents": [
-        "365",
-        0
+        "54",
+        1
       ]
     },
     "class_type": "GetLatentRangeFromBatch",
@@ -455,19 +409,56 @@
       "title": "Get Latent Range From Batch"
     }
   },
-  "365": {
+  "366": {
     "inputs": {
-      "folder_path": "/workspace/ComfyUI/output/prompt-runner",
-      "filename": "latent",
-      "subfolder_name": "latents",
-      "latent": [
+      "file_path": "input/temp.latent",
+      "samples": [
         "54",
         1
       ]
     },
-    "class_type": "SaveLatentWithPath",
+    "class_type": "CustomSaveLatent",
     "_meta": {
-      "title": "Save Latent With Path (CRT)"
+      "title": "CustomSaveLatent"
+    }
+  },
+  "367": {
+    "inputs": {
+      "file_path": "input/temp.latent"
+    },
+    "class_type": "CustomLoadLatent",
+    "_meta": {
+      "title": "CustomLoadLatent"
+    }
+  },
+  "371": {
+    "inputs": {
+      "file_path": [
+        "373",
+        0
+      ],
+      "new_file_name": "path",
+      "any": [
+        "340",
+        0
+      ]
+    },
+    "class_type": "FileNameReplacer",
+    "_meta": {
+      "title": "replace string"
+    }
+  },
+  "373": {
+    "inputs": {
+      "index": 0,
+      "filenames": [
+        "340",
+        0
+      ]
+    },
+    "class_type": "VHS_SelectFilename",
+    "_meta": {
+      "title": "Select Filename 🎥🅥🅗🅢"
     }
   },
   "309:300": {
