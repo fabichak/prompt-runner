@@ -8,11 +8,11 @@ from typing import Dict, Any, Optional, List
 from models.job import RenderJob, CombineJob, JobType
 from services.dry_run_manager import is_dry_run, dry_run_manager
 from config import (
-    HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL,
+    COMBINE_NODE_RESCALE, HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL, NODE_HEIGHT,
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
     NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
     NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS, COMBINE_NODE_LOAD_VIDEO,
-    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, STEPS
+    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, NODE_WIDTH, RESCALE_FACTOR, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH
 )
 from services.service_factory import ServiceFactory
 
@@ -56,12 +56,10 @@ class WorkflowManager:
         workflow = copy.deepcopy(self.base_workflow)
         
         # Set LoRA to HIGH model (Node 309 and sub-node 298)
-        if NODE_LORA in workflow:
-            workflow[NODE_LORA]["inputs"]["lora"] = HIGH_LORA
+        workflow[NODE_LORA]["inputs"]["lora"] = HIGH_LORA
         
         # Set model to HIGH noise model
-        if NODE_MODEL in workflow:
-            workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
+        workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
         
         # Handle reference images (delete for jobs 1-2, set for jobs 3+)
         if job.job_number <= 2:
@@ -74,40 +72,38 @@ class WorkflowManager:
             logger.debug(f"Set reference image: {job.reference_image_path}")
         
         # Delete samples nodes for HIGH jobs
-        if NODE_SAMPLES_54 in workflow:
-            del workflow[NODE_SAMPLES_54]["inputs"]["samples"]
-            logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
+        del workflow[NODE_SAMPLES_54]["inputs"]["samples"]
+        logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
         
          # Delete samples nodes for HIGH jobs
-        if NODE_VIDEO_DECODE in workflow:
-            del workflow[NODE_VIDEO_DECODE]["inputs"]["samples"]
-            logger.debug(f"Deleted samples node {NODE_VIDEO_DECODE} for HIGH job")
+        del workflow[NODE_VIDEO_DECODE]["inputs"]["samples"]
+        logger.debug(f"Deleted samples node {NODE_VIDEO_DECODE} for HIGH job")
 
         # Set frames to render
-        if NODE_FRAMES_VALUE in workflow:
-            workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
-            workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
+        workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+        workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
 
-        if NODE_SAMPLES_54 in workflow:
-            workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
-            workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = 0
-            workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = HIGH_STEPS
-            workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
-    
-        
+        #width/height
+        workflow[NODE_WIDTH]["inputs"]["value"] = VIDEO_WIDTH
+        workflow[NODE_HEIGHT]["inputs"]["value"] = VIDEO_HEIGHT
+
+        #sampler changes
+        workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
+        workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = 0
+        workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = HIGH_STEPS
+        workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
+
         # Set start frame (skip-n-frames)
-        if NODE_START_FRAME in workflow:
-            workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
+        workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
         #define folder to save latent
-        if NODE_SAVE_LATENT in workflow:
-            workflow[NODE_SAVE_LATENT]["inputs"]["file_path"] = job.latent_path
+        workflow[NODE_SAVE_LATENT]["inputs"]["file_path"] = job.latent_path
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
         logger.info(f"Modified workflow for HIGH job #{job.job_number}")
-        
+        self.storage.save_runtime_workflow(workflow, job.prompt_name, job.job_number, "high")
         # Save workflow in dry-run mode
         if is_dry_run():
             job_info = {
@@ -146,40 +142,38 @@ class WorkflowManager:
         workflow = copy.deepcopy(self.base_workflow)
         
         # Set LoRA to LOW model
-        if NODE_LORA in workflow:
-            workflow[NODE_LORA]["inputs"]["lora"] = LOW_LORA
+        workflow[NODE_LORA]["inputs"]["lora"] = LOW_LORA
         
         # Set model to LOW noise model
-        if NODE_MODEL in workflow:
-            workflow[NODE_MODEL]["inputs"]["model"] = LOW_MODEL
+        workflow[NODE_MODEL]["inputs"]["model"] = LOW_MODEL
         
         # Delete latent node for LOW jobs
-        if NODE_SAVE_LATENT in workflow:
-            del workflow[NODE_SAVE_LATENT]
-            logger.debug(f"Deleted latent node {NODE_SAVE_LATENT} for LOW job")
+        del workflow[NODE_SAVE_LATENT]
+        logger.debug(f"Deleted latent node {NODE_SAVE_LATENT} for LOW job")
 
         # set folder to load latent
-        if NODE_LOAD_LATENT in workflow:
-            workflow[NODE_LOAD_LATENT]["inputs"]["file_path"] = job.latent_path
+        workflow[NODE_LOAD_LATENT]["inputs"]["file_path"] = job.latent_path
 
         # Set frames to render
-        if NODE_FRAMES_VALUE in workflow:
-            workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
-            workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
+        workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+        workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
         
         # Set start frame
-        if NODE_START_FRAME in workflow:
-            workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
+        workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
-        # Set start frame
-        if NODE_VIDEO_COMBINE in workflow:
-            workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
+        # Set output path
+        workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
 
-        if NODE_SAMPLES_54 in workflow:
-            workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
-            workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = HIGH_STEPS
-            workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = -1
-            workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
+        #width/height
+        workflow[NODE_WIDTH]["inputs"]["value"] = VIDEO_WIDTH
+        workflow[NODE_HEIGHT]["inputs"]["value"] = VIDEO_HEIGHT
+
+        
+        #sampler changes
+        workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
+        workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = HIGH_STEPS #start where the high stopped
+        workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = -1
+        workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
 
         #load image by setting image_path
         if job.job_number <= 2:
@@ -194,7 +188,7 @@ class WorkflowManager:
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
         logger.info(f"Modified workflow for LOW job #{job.job_number}")
-        
+        self.storage.save_runtime_workflow(workflow, job.prompt_name, job.job_number, "low")
         # Save workflow in dry-run mode
         if is_dry_run():
             job_info = {
@@ -231,29 +225,28 @@ class WorkflowManager:
         workflow = copy.deepcopy(self.combine_workflow)
         
         # Set current video input (node 25)
-        if COMBINE_NODE_VIDEOS in workflow:
-            workflow[COMBINE_NODE_VIDEOS]["inputs"]["videos"] = combine_job.input_video_path
-            logger.debug(f"Set input video: {combine_job.input_video_path}")
+        workflow[COMBINE_NODE_VIDEOS]["inputs"]["videos"] = combine_job.input_video_path
+        logger.debug(f"Set input video: {combine_job.input_video_path}")
         
+        workflow[COMBINE_NODE_RESCALE]["inputs"]["rescale_factor"] = RESCALE_FACTOR
+
+
         # Handle previous combined video
         if combine_job.combine_number == 1:
             # First combine - remove image_2 node
-            if COMBINE_NODE_IMAGE2 in workflow:
-                del workflow[COMBINE_NODE_IMAGE2]
-                logger.debug("Removed image_2 node for first combine")
+            del workflow[COMBINE_NODE_IMAGE2]
+            logger.debug("Removed image_2 node for first combine")
             
             # Set node 14 inputs.images to [33, 0] for first combine
-            if COMBINE_NODE_IMAGES in workflow:
-                workflow[COMBINE_NODE_IMAGES]["inputs"]["images"] = [33, 0]
-                logger.debug("Set images input to [33, 0] for first combine")
+            workflow[COMBINE_NODE_IMAGES]["inputs"]["images"] = [33, 0]
+            logger.debug("Set images input to [33, 0] for first combine")
         else:
             # Subsequent combines - set previous combined video
-            if COMBINE_NODE_LOAD_VIDEO in workflow and combine_job.previous_combined_path:
-                workflow[COMBINE_NODE_LOAD_VIDEO]["inputs"]["video"] = combine_job.previous_combined_path
-                logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
+            workflow[COMBINE_NODE_LOAD_VIDEO]["inputs"]["video"] = combine_job.previous_combined_path
+            logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
                 
         logger.info(f"Created combine workflow for job #{combine_job.combine_number}")
-        
+        self.storage.save_runtime_workflow(workflow, combine_job.prompt_name, combine_job.combine_number, "combine")
         # Save workflow in dry-run mode
         if is_dry_run():
             job_info = {

@@ -196,35 +196,7 @@ class MockStorageManager:
             cleanup_file.parent.mkdir(parents=True, exist_ok=True)
             with open(cleanup_file, 'w') as f:
                 json.dump(simulated_cleanup, f, indent=2)
-    
-    def copy_from_comfyui_output(self, source_path: Path, dest_path: Path) -> bool:
-        """Simulate copying file from ComfyUI output to our directory structure"""
-        try:
-            # Create a dummy file to simulate the copy operation
-            dest_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            # Create a small dummy file instead of actually copying
-            with open(dest_path, 'w') as f:
-                f.write(f"# DRY-RUN SIMULATED FILE\n")
-                f.write(f"# Original source: {source_path}\n")
-                f.write(f"# Simulated at: {datetime.now().isoformat()}\n")
-                f.write(f"# This file represents: {dest_path.suffix} content\n")
-            
-            copy_info = {
-                "source": str(source_path),
-                "destination": str(dest_path),
-                "timestamp": datetime.now().isoformat(),
-                "simulated": True
-            }
-            self.simulated_copies.append(copy_info)
-            
-            logger.info(f"📁 [DRY-RUN] Simulated copy {source_path.name} → {dest_path}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"[DRY-RUN] Error simulating file copy: {e}")
-            return False
-    
+       
     def zip_and_upload_output(self, promptName: str) -> bool:
         """Simulate zipping final output and uploading to GCS"""
         try:

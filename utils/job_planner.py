@@ -6,7 +6,7 @@ from pathlib import Path
 
 from models.prompt_data import PromptData
 from models.job import RenderJob, CombineJob, JobType, JobStatus
-from config import FRAMES_TO_RENDER, REFERENCE_FRAME_OFFSET, LATENTS_DIR
+from config import FRAMES_TO_RENDER
 from services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
@@ -134,15 +134,6 @@ class JobPlanner:
             logger.info(f"  {job}: {job.input_video_path}{prev_info} -> {job.output_path}")
         
         logger.info("=" * 60)
-    
-    def calculate_reference_frame(self, frames_to_render: int) -> int:
-        """Calculate which frame to extract for reference image
-        
-        Returns frame number (0-indexed)
-        """
-        if frames_to_render <= REFERENCE_FRAME_OFFSET:
-            return 0  # Use first frame if video is too short
-        return frames_to_render - REFERENCE_FRAME_OFFSET
     
     def validate_job_sequence(self, render_jobs: List[RenderJob], total_frames: int) -> bool:
         """Validate that job sequence covers all required frames"""

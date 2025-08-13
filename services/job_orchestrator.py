@@ -38,6 +38,7 @@ class JobOrchestrator:
         self.completed_jobs = []
         self.failed_jobs = []
         self.current_state = {}
+        self.last_combine_job = 0
     
     def execute_full_pipeline(self, prompt_data: PromptData, promptName: str, resume_from_state: Optional[str] = None) -> bool:
         """Execute the complete rendering pipeline for a prompt
@@ -111,14 +112,7 @@ class JobOrchestrator:
             # Create final output
             final_success = self.create_final_output(combine_jobs)
             
-            if final_success:
-                # Clean up intermediate files
-                logger.info("Cleaning up intermediate files...")
-                self.storage.cleanup_intermediate_files(promptName, keep_final=True)
-                
-                # Clear saved state
-                self.storage.clear_state(promptName, self.current_prompt_name)
-                
+            if final_success:                
                 logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
                 return True
             else:
@@ -199,27 +193,6 @@ class JobOrchestrator:
             success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
             
             if success:
-                # Wait for outputs to be written
-                time.sleep(2)
-                
-                # # Copy outputs to our directory structure
-                # if job.job_type == JobType.HIGH:
-                #     # Save latent output
-                #     latent_path = self.storage.get_latent_path(self.current_prompt_name, job.video_name, job.job_number)
-                #     # Note: You'll need to adjust this based on how ComfyUI saves latents
-                #     comfyui_output = Path(f"/workspace/ComfyUI/output/latent_{prompt_id}.safetensors")
-                #     if self.storage.copy_from_comfyui_output(comfyui_output, latent_path):
-                #         result.latent_path = str(latent_path)
-                #         job.latent_path = str(latent_path)
-                # else:
-                #     # Save video output
-                #     video_path = self.storage.get_video_path(self.current_prompt_name, job.video_name, job.job_number)
-                #     # Note: Adjust based on actual ComfyUI output naming
-                #     comfyui_output = Path(f"/workspace/ComfyUI/output/{prompt_id}.mp4")
-                #     if self.storage.copy_from_comfyui_output(comfyui_output, video_path):
-                #         result.output_path = str(video_path)
-                #         job.video_output_path = str(video_path)
-                
                 result.complete(True)
                 logger.info(f"✓ Job {job.job_number} completed successfully")
             else:
@@ -234,6 +207,9 @@ class JobOrchestrator:
         
         return result
     
+    def get_last_combine_job(self) -> int:
+        return self.last_combine_job
+    
     def execute_combine_jobs(self, jobs: List[CombineJob]) -> List[JobResult]:
         """Execute all combine jobs in sequence"""
         results = []
@@ -245,6 +221,7 @@ class JobOrchestrator:
             result = self.execute_single_combine_job(job)
             results.append(result)
             
+            self.last_combine_job = job.combine_number
             if result.success:
                 job.status = JobStatus.COMPLETED
             else:
@@ -270,20 +247,8 @@ class JobOrchestrator:
             success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
             
             if success:
-                # Wait for output
-                time.sleep(2)
-                
-                # Copy combined output
-                combined_path = self.storage.get_combined_path(self.current_prompt_name, job.combine_number)
-                comfyui_output = Path(f"/workspace/ComfyUI/output/combined_{prompt_id}.mp4")
-                
-                if self.storage.copy_from_comfyui_output(comfyui_output, combined_path):
-                    result.output_path = str(combined_path)
-                    job.output_path = str(combined_path)
-                    result.complete(True)
-                    logger.info(f"✓ Combine job {job.combine_number} completed")
-                else:
-                    result.complete(False, "Failed to copy output")
+                result.complete(True)
+                logger.info(f"✓ Combine job {job.combine_number} completed")
             else:
                 result.complete(False, error)
                 logger.error(f"✗ Combine job {job.combine_number} failed: {error}")
@@ -291,7 +256,7 @@ class JobOrchestrator:
                 
         except Exception as e:
             result.complete(False, str(e))
-            logger.error(f"✗ Combine job {job.combine_number} exception: {e}")
+            logger.error(f"✗ exception Combine job {job.combine_number} exception: {e}")
             job.retry_count += 1
         
         return result
@@ -312,8 +277,7 @@ class JobOrchestrator:
                 return False
             
             # Calculate frame number to extract (frames_to_render - 10)
-            from config import REFERENCE_FRAME_OFFSET
-            frame_num = max(1, job.frames_to_render - REFERENCE_FRAME_OFFSET)
+            frame_num = max(1, job.frames_to_render - 2*REFERENCE_FRAME_OFFSET)
             
             # Get reference image path
             ref_path = self.storage.get_reference_path(self.current_prompt_name, job.job_number)

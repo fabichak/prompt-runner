@@ -300,7 +300,7 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "341",
+        "375",
         0
       ]
     },
@@ -349,72 +349,12 @@
       "title": "🖼 Load Image From Path"
     }
   },
-  "359": {
-    "inputs": {
-      "images": [
-        "358",
-        0
-      ]
-    },
-    "class_type": "PreviewImage",
-    "_meta": {
-      "title": "Preview Image"
-    }
-  },
-  "362": {
-    "inputs": {
-      "enable_vae_tiling": false,
-      "tile_x": 512,
-      "tile_y": 512,
-      "tile_stride_x": 256,
-      "tile_stride_y": 256,
-      "normalization": "default",
-      "vae": [
-        "5",
-        0
-      ],
-      "samples": [
-        "364",
-        0
-      ]
-    },
-    "class_type": "WanVideoDecode",
-    "_meta": {
-      "title": "WanVideo Decode"
-    }
-  },
-  "363": {
-    "inputs": {
-      "images": [
-        "362",
-        0
-      ]
-    },
-    "class_type": "PreviewImage",
-    "_meta": {
-      "title": "Preview Image"
-    }
-  },
-  "364": {
-    "inputs": {
-      "start_index": 0,
-      "num_frames": 1,
-      "latents": [
-        "54",
-        1
-      ]
-    },
-    "class_type": "GetLatentRangeFromBatch",
-    "_meta": {
-      "title": "Get Latent Range From Batch"
-    }
-  },
   "366": {
     "inputs": {
       "file_path": "input/temp.latent",
       "samples": [
         "54",
-        1
+        0
       ]
     },
     "class_type": "CustomSaveLatent",
@@ -429,6 +369,20 @@
     "class_type": "CustomLoadLatent",
     "_meta": {
       "title": "CustomLoadLatent"
+    }
+  },
+  "375": {
+    "inputs": {
+      "start_index": 10,
+      "num_frames": 4096,
+      "images": [
+        "341",
+        0
+      ]
+    },
+    "class_type": "GetImageRangeFromBatch",
+    "_meta": {
+      "title": "Get Image or Mask Range From Batch"
     }
   },
   "309:300": {

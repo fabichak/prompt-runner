@@ -10,9 +10,9 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 
 from config import (
-    GCS_BUCKET_PATH, BASE_OUTPUT_DIR, LATENTS_DIR, VIDEOS_DIR,
-    REFERENCES_DIR, COMBINED_DIR, FINAL_DIR, STATE_DIR
+    GCS_BUCKET_PATH, BASE_OUTPUT_DIR
 )
+from services.dry_run_manager import PathJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +52,8 @@ class StorageManager:
             subfolder = prompt_base / "combined"
         elif dir_type == "final":
             subfolder = prompt_base / "final"
+        elif dir_type == "workflows":
+            subfolder = prompt_base / "workflows"    
         else:
             raise ValueError(f"Unknown directory type: {dir_type}")
         
@@ -89,6 +91,14 @@ class StorageManager:
         """Get path for final output video"""
         dir_path = self.get_directory(promptName, "final")
         return dir_path / f"{promptName}_final.mp4"
+    
+    def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
+        filename = f"{job_number:03d}_{job_type}.json"
+        dir_path = self.get_directory(promptName, "workflows")
+        filepath = dir_path / filename
+        with open(filepath, 'w') as f:
+            json.dump(workflow, f, indent=2, cls=PathJSONEncoder)
+        return str(filepath)
     
     def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):
         """Save job state for recovery"""

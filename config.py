@@ -36,15 +36,10 @@ LATENTS_DIR = "latents"
 VIDEOS_DIR = "videos"
 REFERENCES_DIR = "references"
 COMBINED_DIR = "combined"
-FINAL_DIR = "final"
 STATE_DIR = "state"
 
 # GCS Configuration
 GCS_BUCKET_PATH = "gs://aiof-saved-files/"
-
-# Job Configuration
-FRAMES_TO_RENDER = 21  # Constant frames per chunk
-DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
 
 # Model Configuration
 HIGH_LORA = "wan2.2_high_t2v.safetensors"
@@ -52,10 +47,22 @@ LOW_LORA = "wan2.2_low_t2v.safetensors"
 HIGH_MODEL = "Wan2.2_T2V_High_Noise_14B_VACE-Q8_0.gguf"
 LOW_MODEL = "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf"
 
+#VIDEO
+REFERENCE_FRAME_OFFSET = 20  # Hardcoded. the first 10 frames are always thrown away. then we need a refence of 10 before that, so 20
+STEPS = 8
+HIGH_STEPS = 4
+FRAMES_TO_RENDER = 101  # Constant frames per chunk
+DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
+VIDEO_WIDTH = 720
+VIDEO_HEIGHT = 1280
+RESCALE_FACTOR = 1.5
+
 # Node IDs for workflow modification
 NODE_LORA = "309:298"  # Also has sub-node 298
 NODE_MODEL = "4"
 NODE_VACE = "144"
+NODE_WIDTH = "21"
+NODE_HEIGHT = "20"
 NODE_REF_IMAGES = "358"
 NODE_SAMPLES_54 = "54"
 NODE_SAVE_LATENT = "366"
@@ -72,16 +79,13 @@ COMBINE_NODE_VIDEOS = "25"
 COMBINE_NODE_IMAGE2 = "30"
 COMBINE_NODE_LOAD_VIDEO = "40"
 COMBINE_NODE_IMAGES = "14"
+COMBINE_NODE_RESCALE = "35"
+
+
 
 # Retry Configuration
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
-
-# Reference Image Configuration
-REFERENCE_FRAME_OFFSET = 10  # Extract frame at (frames_to_render - 10)
-STEPS = 8
-HIGH_STEPS = 4
-
 
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown

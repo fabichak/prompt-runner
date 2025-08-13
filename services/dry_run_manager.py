@@ -246,6 +246,14 @@ class DryRunManager:
         except Exception as e:
             logger.error(f"❌ Failed to save aggregated payloads: {e}")
 
+
+    def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
+        filename = f"{job_number:03d}_{job_type}.json"
+        filepath = self.temp_dir / "workflows" / filename
+        with open(filepath, 'w') as f:
+            json.dump(workflow, f, indent=2, cls=PathJSONEncoder)
+        return str(filepath)
+
     def save_workflow(self, workflow: Dict[str, Any], job_info: Dict[str, Any]) -> str:
         """Save workflow JSON to temp folder and return filename"""
         if not self.is_dry_run:

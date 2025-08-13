@@ -231,10 +231,19 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         
         # Upload to GCS if requested
         if not args.no_upload:
+            last_combine_job = orchestrator.get_last_combine_job()
+            
             storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(promptName, len(combine_jobs))
+            upload_success = storage.zip_and_upload_output(promptName, len(last_combine_job))
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
+                # Clean up intermediate files
+                self.storage.cleanup_intermediate_files(promptName, keep_final=True)
+                
+                # Clear saved state
+                self.storage.clear_state(promptName, promptName)
+                logger.info("Cleaning up intermediate files and state...")
+
             else:
                 logger.warning(f"⚠️ Failed to upload {prompt_data.video_name} to GCS")
         
