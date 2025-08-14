@@ -18,10 +18,12 @@ config.CLIENT_ID = str(uuid.uuid4())
 from models.prompt_data import PromptData
 from models.job import JobType
 from services.job_orchestrator import JobOrchestrator
+from services.dual_instance_orchestrator import DualInstanceOrchestrator
 from services.service_factory import ServiceFactory
 from services.dry_run_manager import enable_dry_run, dry_run_manager
 from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
+from config import ENABLE_DUAL_INSTANCE
 
 
 def setup_logging(log_level: str = "INFO", timestamp: str = None):
@@ -133,6 +135,16 @@ Examples:
         "--force-shutdown",
         action="store_true",
         help="Force shutdown RunPod instance after completion"
+    )
+    parser.add_argument(
+        "--dual-instance",
+        action="store_true",
+        help="Enable dual ComfyUI instance mode (HIGH jobs on port 8188, LOW jobs on port 8189)"
+    )
+    parser.add_argument(
+        "--single-instance",
+        action="store_true", 
+        help="Force single ComfyUI instance mode (overrides config)"
     )
     
     # Debug options
@@ -331,8 +343,22 @@ def main():
         logger.info("Validation complete - exiting (--validate-only)")
         sys.exit(0)
     
-    # Create orchestrator
-    orchestrator = JobOrchestrator()
+    # Create orchestrator - choose between single and dual instance mode
+    # Command line flags override config
+    use_dual_instance = ENABLE_DUAL_INSTANCE
+    if args.dual_instance:
+        use_dual_instance = True
+        logger.info("🎯 Dual instance mode enabled via command line")
+    elif args.single_instance:
+        use_dual_instance = False
+        logger.info("🎯 Single instance mode forced via command line")
+    
+    if use_dual_instance:
+        logger.info("🚀 Starting in DUAL INSTANCE mode")
+        orchestrator = DualInstanceOrchestrator()
+    else:
+        logger.info("🚀 Starting in SINGLE INSTANCE mode")
+        orchestrator = JobOrchestrator()
     
     # Process each prompt file
     total_success = 0

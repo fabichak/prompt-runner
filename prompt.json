@@ -67,11 +67,11 @@
   },
   "8": {
     "inputs": {
-      "blocks_to_swap": 5,
+      "blocks_to_swap": 40,
       "offload_img_emb": false,
       "offload_txt_emb": false,
-      "use_non_blocking": false,
-      "vace_blocks_to_swap": 5
+      "use_non_blocking": true,
+      "vace_blocks_to_swap": 15
     },
     "class_type": "WanVideoBlockSwap",
     "_meta": {

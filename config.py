@@ -87,5 +87,36 @@ COMBINE_NODE_RESCALE = "35"
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
 
+# Dual ComfyUI Instance Configuration
+ENABLE_DUAL_INSTANCE = True  # Enable dual instance mode
+COMFYUI_INSTANCES = [
+    {
+        "instance_id": "high_priority",
+        "host": "127.0.0.1", 
+        "port": 8188,
+        "job_types": ["HIGH"],
+        "max_concurrent": 1,
+        "enabled": True
+    },
+    {
+        "instance_id": "low_priority",
+        "host": "127.0.0.1",
+        "port": 8189, 
+        "job_types": ["LOW"],
+        "max_concurrent": 1,
+        "enabled": True
+    }
+]
+
+# Fallback configuration for single instance mode
+SINGLE_INSTANCE_CONFIG = {
+    "instance_id": "main",
+    "host": "127.0.0.1",
+    "port": 8188,
+    "job_types": ["HIGH", "LOW"],
+    "max_concurrent": 1,
+    "enabled": True
+}
+
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
