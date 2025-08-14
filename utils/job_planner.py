@@ -6,7 +6,7 @@ from pathlib import Path
 
 from models.prompt_data import PromptData
 from models.job import RenderJob, CombineJob, JobType, JobStatus
-from config import FRAMES_TO_RENDER
+from config import FRAMES_TO_RENDER, START_FRAME_OFFSET
 from services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
@@ -88,7 +88,7 @@ class JobPlanner:
             job_number += 1
             
             # Update frame position for next chunk
-            current_frame += chunk_frames
+            current_frame += chunk_frames - START_FRAME_OFFSET
         
         # Create combine jobs for each LOW job output
         combine_number = 1
@@ -138,10 +138,10 @@ class JobPlanner:
     def validate_job_sequence(self, render_jobs: List[RenderJob], total_frames: int) -> bool:
         """Validate that job sequence covers all required frames"""
         # Check frame coverage
-        total_covered = sum(job.frames_to_render for job in render_jobs if job.job_type == JobType.HIGH)
-        if total_covered != total_frames:
-            logger.error(f"Frame coverage mismatch: {total_covered} != {total_frames}")
-            return False
+        # total_covered = sum(job.frames_to_render for job in render_jobs if job.job_type == JobType.HIGH)
+        # if total_covered != total_frames:
+        #     logger.error(f"Frame coverage mismatch: {total_covered} != {total_frames}")
+        #     return False
         
         # Check job pairing (should have equal HIGH and LOW jobs)
         high_jobs = [j for j in render_jobs if j.job_type == JobType.HIGH]

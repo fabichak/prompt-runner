@@ -9,10 +9,10 @@ from models.job import RenderJob, CombineJob, JobType
 from services.dry_run_manager import is_dry_run, dry_run_manager
 from config import (
     COMBINE_NODE_RESCALE, HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL, NODE_HEIGHT,
-    NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54,
-    NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE,
-    NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS, COMBINE_NODE_LOAD_VIDEO,
-    COMBINE_NODE_VIDEOS, COMBINE_NODE_IMAGE2, COMBINE_NODE_IMAGES, NODE_WIDTH, RESCALE_FACTOR, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH
+    NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54, COMBINE_NODE_IMAGE_BATCH,
+    NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE, COMBINE_NODE_OUTPUT_COMBINE_1,
+    NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS,COMBINE_NODE_LOAD_VIDEO_COMBINE,
+    COMBINE_NODE_VIDEOS, COMBINE_NODE_OUTPUT_COMBINE_N, NODE_WIDTH, RESCALE_FACTOR, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH
 )
 from services.service_factory import ServiceFactory
 
@@ -225,26 +225,23 @@ class WorkflowManager:
         workflow = copy.deepcopy(self.combine_workflow)
         
         # Set current video input (node 25)
-        workflow[COMBINE_NODE_VIDEOS]["inputs"]["videos"] = combine_job.input_video_path
+        workflow[COMBINE_NODE_VIDEOS]["inputs"]["video"] = combine_job.input_video_path
         logger.debug(f"Set input video: {combine_job.input_video_path}")
         
         workflow[COMBINE_NODE_RESCALE]["inputs"]["rescale_factor"] = RESCALE_FACTOR
 
-
         # Handle previous combined video
         if combine_job.combine_number == 1:
-            # First combine - remove image_2 node
-            del workflow[COMBINE_NODE_IMAGE2]
-            logger.debug("Removed image_2 node for first combine")
-            
-            # Set node 14 inputs.images to [33, 0] for first combine
-            workflow[COMBINE_NODE_IMAGES]["inputs"]["images"] = [33, 0]
-            logger.debug("Set images input to [33, 0] for first combine")
+            del workflow[COMBINE_NODE_OUTPUT_COMBINE_N]
+            del workflow[COMBINE_NODE_LOAD_VIDEO_COMBINE]
+            del workflow[COMBINE_NODE_IMAGE_BATCH]
+            workflow[COMBINE_NODE_OUTPUT_COMBINE_1]["inputs"]["filename_prefix"] = combine_job.output_path
         else:
             # Subsequent combines - set previous combined video
-            workflow[COMBINE_NODE_LOAD_VIDEO]["inputs"]["video"] = combine_job.previous_combined_path
-            logger.debug(f"Set previous combined: {combine_job.previous_combined_path}")
-                
+            workflow[COMBINE_NODE_LOAD_VIDEO_COMBINE]["inputs"]["video"] = combine_job.previous_combined_path
+            workflow[COMBINE_NODE_OUTPUT_COMBINE_N]["inputs"]["filename_prefix"] = combine_job.output_path
+            del workflow[COMBINE_NODE_OUTPUT_COMBINE_1]
+
         logger.info(f"Created combine workflow for job #{combine_job.combine_number}")
         self.storage.save_runtime_workflow(workflow, combine_job.prompt_name, combine_job.combine_number, "combine")
         # Save workflow in dry-run mode

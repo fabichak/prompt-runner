@@ -172,6 +172,10 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
     """Process a single prompt file"""
     logger = logging.getLogger(__name__)
     
+
+    if args.resume:
+        promptName = args.resume
+
     logger.info("=" * 80)
     logger.info(f"NAME: {promptName}")
     logger.info(f"PROCESSING: {prompt_data.video_name}")
@@ -211,14 +215,14 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         )
         
         # Generate render job workflows
-        for job in render_jobs:
-            try:
-                if job.job_type == JobType.HIGH:
-                    workflow_manager.modify_for_high_job(job)
-                else:
-                    workflow_manager.modify_for_low_job(job)
-            except Exception as e:
-                logger.warning(f"Could not generate workflow for job {job.job_number}: {e}")
+        # for job in render_jobs:
+        #     try:
+        #         if job.job_type == JobType.HIGH:
+        #             workflow_manager.modify_for_high_job(job)
+        #         else:
+        #             workflow_manager.modify_for_low_job(job)
+        #     except Exception as e:
+        #         logger.warning(f"Could not generate workflow for job {job.job_number}: {e}")
         
         # Generate combine job workflows  
         for job in combine_jobs:
@@ -246,14 +250,14 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
             last_combine_job = orchestrator.get_last_combine_job()
             
             storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(promptName, len(last_combine_job))
+            upload_success = storage.zip_and_upload_output(promptName, last_combine_job)
             if upload_success:
                 logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
                 # Clean up intermediate files
-                self.storage.cleanup_intermediate_files(promptName, keep_final=True)
+                #storage.cleanup_intermediate_files(promptName, keep_final=True)
                 
                 # Clear saved state
-                self.storage.clear_state(promptName, promptName)
+                storage.clear_state(promptName, promptName)
                 logger.info("Cleaning up intermediate files and state...")
 
             else:
@@ -262,7 +266,7 @@ def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrches
         # Clean up if requested
         if not args.keep_intermediate:
             storage = ServiceFactory.create_storage_manager()
-            storage.cleanup_intermediate_files(promptName, keep_final=True)
+            #storage.cleanup_intermediate_files(promptName, keep_final=True)
             logger.info("Cleaned up intermediate files")
     else:
         logger.error(f"❌ Failed to process {prompt_data.video_name}")

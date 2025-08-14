@@ -66,10 +66,11 @@ class JobOrchestrator:
             
             # Load or create execution state
             if resume_from_state:
-                state = self.storage.load_state(promptName, resume_from_state)
-                if state:
-                    self.restore_state(state)
-                    logger.info(f"Resumed from state: {resume_from_state}")
+                self.current_prompt_name = resume_from_state
+                # state = self.storage.load_state(promptName, resume_from_state)
+                # if state:
+                #     self.restore_state(state)
+                #     logger.info(f"Resumed from state: {resume_from_state}")
             
             # Ensure prompt directories exist
             self.storage.ensure_directories(promptName)
@@ -249,6 +250,7 @@ class JobOrchestrator:
             if success:
                 result.complete(True)
                 logger.info(f"✓ Combine job {job.combine_number} completed")
+                logger.info(f"✓ Combine job {job.output_path} completed")
             else:
                 result.complete(False, error)
                 logger.error(f"✗ Combine job {job.combine_number} failed: {error}")
@@ -277,7 +279,7 @@ class JobOrchestrator:
                 return False
             
             # Calculate frame number to extract (frames_to_render - 10)
-            frame_num = max(1, job.frames_to_render - 2*REFERENCE_FRAME_OFFSET)
+            frame_num = max(1, job.frames_to_render - REFERENCE_FRAME_OFFSET)
             
             # Get reference image path
             ref_path = self.storage.get_reference_path(self.current_prompt_name, job.job_number)
