@@ -48,11 +48,11 @@ HIGH_MODEL = "Wan2.2_T2V_High_Noise_14B_VACE-Q8_0.gguf"
 LOW_MODEL = "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf"
 
 #VIDEO
+FRAMES_TO_RENDER = 41  # Constant frames per chunk
 START_FRAME_OFFSET = 10
 REFERENCE_FRAME_OFFSET = 2*START_FRAME_OFFSET  # Hardcoded. the first 10 frames are always thrown away. then we need a refence of 10 before that, so 20
 STEPS = 8
 HIGH_STEPS = 4
-FRAMES_TO_RENDER = 41  # Constant frames per chunk
 DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
 VIDEO_WIDTH = 720
 VIDEO_HEIGHT = 1280
@@ -74,6 +74,7 @@ NODE_START_FRAME = "348"
 NODE_VIDEO_COMBINE = "340"
 NODE_VIDEO_DECODE = "341"
 NODE_PROMPT = "53"
+NODE_IMAGE_BATCH_SKIP = "375"
 
 # Combine workflow node IDs
 COMBINE_NODE_VIDEOS = "25"

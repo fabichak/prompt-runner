@@ -29,6 +29,7 @@ class RenderJob:
     frames_to_render: int = 101
     video_name: str = ""
     prompt_name: str = ""  # Session identifier for organizing files
+    frames_rendered: int = 0
     
     # Input/output paths
     latent_dir_path: Optional[str] = None

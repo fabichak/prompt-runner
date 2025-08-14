@@ -8,7 +8,7 @@ from typing import Dict, Any, Optional, List
 from models.job import RenderJob, CombineJob, JobType
 from services.dry_run_manager import is_dry_run, dry_run_manager
 from config import (
-    COMBINE_NODE_RESCALE, HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL, NODE_HEIGHT,
+    COMBINE_NODE_RESCALE, HIGH_LORA, LOW_LORA, HIGH_MODEL, LOW_MODEL, NODE_HEIGHT, NODE_IMAGE_BATCH_SKIP,
     NODE_LORA, NODE_MODEL, NODE_REF_IMAGES, NODE_SAMPLES_54, COMBINE_NODE_IMAGE_BATCH,
     NODE_SAVE_LATENT, NODE_FRAMES_VALUE, NODE_LOAD_LATENT, NODE_VIDEO_COMBINE, COMBINE_NODE_OUTPUT_COMBINE_1,
     NODE_START_FRAME, NODE_PROMPT, NODE_VACE, NODE_VIDEO_DECODE, HIGH_STEPS,COMBINE_NODE_LOAD_VIDEO_COMBINE,
@@ -62,8 +62,9 @@ class WorkflowManager:
         workflow[NODE_MODEL]["inputs"]["model"] = HIGH_MODEL
         
         # Handle reference images (delete for jobs 1-2, set for jobs 3+)
-        if job.job_number <= 2:
-            # Delete reference images node for first two jobs
+        if job.job_number == 1:
+            # do not skip any of the generated frames
+            workflow[NODE_IMAGE_BATCH_SKIP]["inputs"]["start_index"] = 0
             del workflow[NODE_VACE]["inputs"]["ref_images"]
             logger.debug(f"Deleted reference images node for job {job.job_number}")
         else:
@@ -81,7 +82,6 @@ class WorkflowManager:
 
         # Set frames to render
         workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
-        workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
 
         #width/height
         workflow[NODE_WIDTH]["inputs"]["value"] = VIDEO_WIDTH
@@ -156,7 +156,6 @@ class WorkflowManager:
 
         # Set frames to render
         workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
-        workflow[NODE_VACE]["inputs"]["num_frames"] = job.frames_to_render
         
         # Set start frame
         workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
@@ -168,7 +167,7 @@ class WorkflowManager:
         workflow[NODE_WIDTH]["inputs"]["value"] = VIDEO_WIDTH
         workflow[NODE_HEIGHT]["inputs"]["value"] = VIDEO_HEIGHT
 
-        
+
         #sampler changes
         workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
         workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = HIGH_STEPS #start where the high stopped

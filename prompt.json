@@ -31,7 +31,7 @@
       "model": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf",
       "base_precision": "fp16_fast",
       "quantization": "disabled",
-      "load_device": "offload_device",
+      "load_device": "main_device",
       "attention_mode": "sageattn",
       "compile_args": [
         "1",
@@ -202,7 +202,7 @@
   "149": {
     "inputs": {
       "video": "2025-05-02_19-39-31_UTC.mp4",
-      "force_rate": 30,
+      "force_rate": 32,
       "custom_width": [
         "21",
         0
@@ -219,7 +219,7 @@
         "348",
         0
       ],
-      "select_every_nth": 1,
+      "select_every_nth": 2,
       "format": "AnimateDiff"
     },
     "class_type": "VHS_LoadVideo",
