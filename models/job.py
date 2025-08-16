@@ -27,7 +27,7 @@ class RenderJob:
     start_frame: int = 0
     seed: int = 0
     frames_to_render: int = 101
-    video_name: str = ""
+    video_input_path: str = ""
     prompt_name: str = ""  # Session identifier for organizing files
     frames_rendered: int = 0
     
@@ -37,6 +37,7 @@ class RenderJob:
     reference_image_path: Optional[str] = None
     video_output_path: Optional[str] = None
     video_output_full_path: Optional[str] = None
+    next_reference_image_output_path: Optional[str] = None
     
     # Status tracking
     status: JobStatus = JobStatus.PENDING
@@ -57,7 +58,7 @@ class RenderJob:
             'job_number': self.job_number,
             'start_frame': self.start_frame,
             'frames_to_render': self.frames_to_render,
-            'video_name': self.video_name,
+            'video_name': self.video_input_path,
             'latent_path': self.latent_path,
             'reference_image_path': self.reference_image_path,
             'video_output_path': self.video_output_path,
@@ -77,7 +78,7 @@ class RenderJob:
         job.job_number = data.get('job_number', 0)
         job.start_frame = data.get('start_frame', 0)
         job.frames_to_render = data.get('frames_to_render', 101)
-        job.video_name = data.get('video_name', '')
+        job.video_input_path = data.get('video_name', '')
         job.latent_path = data.get('latent_path')
         job.reference_image_path = data.get('reference_image_path')
         job.video_output_path = data.get('video_output_path')

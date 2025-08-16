@@ -109,17 +109,10 @@ class JobOrchestrator:
                 logger.error("Some combine jobs failed")
                 self.save_state()
                 return False
-            
-            # Create final output
-            final_success = self.create_final_output(combine_jobs)
-            
-            if final_success:                
-                logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
-                return True
-            else:
-                logger.error("Failed to create final output")
-                return False
-                
+                                    
+            logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
+            return True
+                        
         except Exception as e:
             logger.error(f"Pipeline execution error: {e}")
             self.save_state()
@@ -165,22 +158,22 @@ class JobOrchestrator:
                     # Calculate remaining frames for subsequent jobs
                     start_frame = 0
                     for job_to_change in jobs:
-                        remaining_frames = (total_frames - start_frame/2)
+                        remaining_frames = (total_frames - start_frame)
                         chunk_frames = min(FRAMES_TO_RENDER, remaining_frames)
                         if job_to_change.job_type == JobType.LOW:
                             if job_to_change.job_number <= job.job_number:
-                                start_frame += job_to_change.frames_rendered*2
+                                start_frame += job_to_change.frames_rendered
                         if job_to_change.job_number > job.job_number:
                             job_to_change.start_frame = start_frame - START_FRAME_OFFSET
                             job_to_change.frames_to_render = chunk_frames
                             if job_to_change.job_type == JobType.LOW:
-                                start_frame += (chunk_frames - START_FRAME_OFFSET)*2
+                                start_frame += (chunk_frames - START_FRAME_OFFSET)
                     
                     for job_to_change in jobs:   
                         logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}")
                     logger.debug("|" * 60)
                     if not ref_success:
-                        logger.warning(f"Failed to extract reference image for job {job.job_number}")
+                        logger.error(f"Failed to extract reference image for job {job.job_number}")
             else:
                 self.failed_jobs.append(job.job_number)
                 job.status = JobStatus.FAILED
@@ -214,7 +207,9 @@ class JobOrchestrator:
                 workflow = self.workflow_manager.modify_for_low_job(job)
             
             # Execute workflow with retry
-            success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
+            success = True
+            if job.job_type == JobType.LOW:
+                success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
             
             if success:
                 result.complete(True)
@@ -333,65 +328,38 @@ class JobOrchestrator:
             result = subprocess.run(cmd, capture_output=True, text=True)
             try:
                 frames_rendered = int(result.stdout.strip())
+                logger.info(f"Frames rendered for {job.video_output_full_path}: {frames_rendered}")
+                return True, frames_rendered
             except ValueError:
                 logger.error(f"Failed to parse frame count from ffprobe. stdout: '{result.stdout.strip()}', stderr: '{result.stderr}'")
                 return False, 0
 
-            # Calculate frame number to extract (frames_to_render - 10)
-            frame_num = max(1, frames_rendered - REFERENCE_FRAME_OFFSET)
+            # # # Calculate frame number to extract (frames_to_render - 10)
+            # # frame_num = max(1, frames_rendered - REFERENCE_FRAME_OFFSET)
 
-            # Use ffmpeg to extract frame
-            cmd = [
-                "ffmpeg",
-                "-i", str(video_path),
-                "-vf", f"select=eq(n\\,{frame_num})",
-                "-vframes", "1",
-                "-y",  # Overwrite if exists
-                str(ref_path)
-            ]
+            # # # Use ffmpeg to extract frame
+            # # cmd = [
+            # #     "ffmpeg",
+            # #     "-i", str(video_path),
+            # #     "-vf", f"select=eq(n\\,{frame_num})",
+            # #     "-vframes", "1",
+            # #     "-y",  # Overwrite if exists
+            # #     str(ref_path)
+            # # ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            # # result = subprocess.run(cmd, capture_output=True, text=True)
             
-            if result.returncode == 0 and ref_path.exists():
-                logger.info(f"Extracted reference frame {frame_num} to {ref_path}")
-                return True, frames_rendered
-            else:
-                logger.error(f"Failed to extract reference: {result.stderr}")
-                return False, 0
+            # if result.returncode == 0 and ref_path.exists():
+            #     logger.info(f"Extracted reference frame {frame_num} to {ref_path}")
+            #     return True, frames_rendered
+            # else:
+            #     logger.error(f"Failed to extract reference: {result.stderr}")
+            #     return False, 0
                 
         except Exception as e:
             logger.error(f"Error extracting reference image: {e}")
             return False, 0
-    
-    def create_final_output(self, combine_jobs: List[CombineJob]) -> bool:
-        """Create final output video from last combined video"""
-        try:
-            if not combine_jobs:
-                logger.error("No combine jobs to create final output")
-                return False
-            
-            # # Get the last combined video
-            # last_combine = combine_jobs[-1]
-            # last_combined_path = Path(last_combine.output_path)
-            
-            # if not last_combined_path.exists():
-            #     # Try in ComfyUI output
-            #     last_combined_path = Path(f"/workspace/ComfyUI/output") / last_combined_path.name
-            #     if not last_combined_path.exists():
-            #         logger.error(f"Last combined video not found: {last_combined_path}")
-            #         return False
-            
-            # # Copy to final output
-            # final_path = self.storage.get_final_path(self.current_prompt_name)
-            # shutil.copy2(last_combined_path, final_path)
-            
-            # logger.info(f"Created final output: {final_path}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error creating final output: {e}")
-            return False
-    
+       
     def save_state(self):
         """Save current execution state for recovery"""
         state = {

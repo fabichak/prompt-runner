@@ -57,7 +57,7 @@ class JobPlanner:
                 seed=random_seed,
                 start_frame=current_frame,
                 frames_to_render=chunk_frames,
-                video_name=prompt_data.video_name,
+                video_input_path=prompt_data.video_name,
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
                 latent_path=self.storage.get_latent_path(self.promptName, job_number),
@@ -67,6 +67,14 @@ class JobPlanner:
             render_jobs.append(high_job)
             job_number += 1
             
+            reference_image_path_for_low = self.storage.get_reference_path(self.promptName, job_number-2)
+            if job_number == 2: 
+                # The source_file is the .txt prompt file. A reference image for the first
+                # chunk can be provided with the same name but a .png extension.
+                source_path = Path(prompt_data.source_file)
+                reference_image_path_for_low = str(source_path.with_suffix(".png").resolve())
+            reference_video_path = str(Path(prompt_data.source_file).with_suffix(".mp4").resolve())
+
             # Create LOW job (even numbers: 2, 4, 6...)
             low_job = RenderJob(
                 prompt_name=self.promptName,
@@ -75,15 +83,18 @@ class JobPlanner:
                 start_frame=current_frame,
                 seed=random_seed,
                 frames_to_render=chunk_frames,
-                video_name=prompt_data.video_name,
+                video_input_path=reference_video_path,
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
                 latent_path=self.storage.get_latent_path(self.promptName, job_number-1), #from the job-1 high output
-                reference_image_path= self.storage.get_reference_path(self.promptName, job_number-2), #from job-2 low output, not used in job=2
+                reference_image_path=reference_image_path_for_low,
+                next_reference_image_output_path=self.storage.get_reference_path(self.promptName, job_number),
                 video_output_path=self.storage.get_video_path(self.promptName, job_number),
                 video_output_full_path=self.storage.get_video_full_path(self.promptName, job_number)
             )
             
+            logger.info(f"Setting low job {low_job.job_number} with image input {low_job.reference_image_path}")
+
             render_jobs.append(low_job)
             job_number += 1
             

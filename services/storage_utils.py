@@ -29,7 +29,6 @@ class StorageManager:
             prompt_base / "videos",
             prompt_base / "references", 
             prompt_base / "combined",
-            prompt_base / "final",
             prompt_base / "state"
         ]
         for directory in directories:
@@ -50,8 +49,6 @@ class StorageManager:
             subfolder = prompt_base / "references"
         elif dir_type == "combined":
             subfolder = prompt_base / "combined"
-        elif dir_type == "final":
-            subfolder = prompt_base / "final"
         elif dir_type == "workflows":
             subfolder = prompt_base / "workflows"    
         else:
@@ -86,12 +83,7 @@ class StorageManager:
     
     def get_combined_full_path(self, promptName: str, job_number: int) -> Path:
         return f"{self.get_combined_path(promptName, job_number)}_00001.mp4"
-    
-    def get_final_path(self, promptName: str) -> Path:
-        """Get path for final output video"""
-        dir_path = self.get_directory(promptName, "final")
-        return dir_path / f"{promptName}_final.mp4"
-    
+        
     def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
         filename = f"{job_number:03d}_{job_type}.json"
         dir_path = self.get_directory(promptName, "workflows")
@@ -148,35 +140,33 @@ class StorageManager:
             if directory.exists():
                 shutil.rmtree(directory)
                 logger.info(f"Cleaned up {directory}")
-        
-        if not keep_final:
-            final_dir = self.get_directory(promptName, "final")
-            if final_dir.exists():
-                shutil.rmtree(final_dir)
     
-    def zip_and_upload_output(self, promptName: str, job_number: int) -> bool:
-        """Zip final output and upload to GCS"""
+    def zip_and_upload_output(self, promptName: str) -> bool:
+        """Zip the 'combined' folder contents and upload to GCS."""
         try:
-            final_video = Path(self.get_combined_full_path(promptName, job_number))
-            if not final_video.exists():
-                logger.error(f"Final video not found: {final_video}")
+            combined_dir = self.get_directory(promptName, "combined")
+            if not combined_dir.exists() or not any(f for f in combined_dir.rglob('*') if f.is_file()):
+                logger.error(f"'combined' directory is empty or does not exist: {combined_dir}")
                 return False
             
-            # Create zip file in the prompt's final directory
+            # Create zip file in the prompt's base directory
             prompt_base = BASE_OUTPUT_DIR / promptName
-            final_dir = prompt_base / "final"
-            final_dir.mkdir(parents=True, exist_ok=True)
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            zip_name = f"{promptName}_{timestamp}.zip"
-            zip_path = final_dir / zip_name
+            zip_name_base = f"{promptName}_combined_{timestamp}"
+            zip_path_base = prompt_base / zip_name_base
             
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                zipf.write(final_video, final_video.name)
-                logger.info(f"Created zip file: {zip_path}")
+            # Create zip file of the combined directory
+            zip_path_str = shutil.make_archive(
+                base_name=str(zip_path_base),
+                format='zip',
+                root_dir=str(combined_dir)
+            )
+            zip_path = Path(zip_path_str)
+            logger.info(f"Created zip file: {zip_path}")
             
             # Upload to GCS
-            gcs_path = f"{GCS_BUCKET_PATH}{zip_name}"
+            gcs_path = f"{GCS_BUCKET_PATH}{zip_path.name}"
             cmd = ["gsutil", "cp", str(zip_path), gcs_path]
             
             result = subprocess.run(cmd, capture_output=True, text=True)
@@ -203,7 +193,6 @@ class StorageManager:
             ("videos", "videos"),
             ("references", "references"),
             ("combined", "combined"),
-            ("final", "final"),
             ("state", "state"),
             ("total", "")  # Empty string for the prompt base directory
         ]:
