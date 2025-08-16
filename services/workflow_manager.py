@@ -66,22 +66,20 @@ class WorkflowManager:
             # do not skip any of the generated frames
             workflow[NODE_IMAGE_BATCH_SKIP]["inputs"]["start_index"] = 0
             del workflow[NODE_VACE]["inputs"]["ref_images"]
-            logger.debug(f"Deleted reference images node for job {job.job_number}")
         else:
             # Set reference image path for jobs 3+
             workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = job.reference_image_path
-            logger.debug(f"Set reference image: {job.reference_image_path}")
         
         # Delete samples nodes for HIGH jobs
         del workflow[NODE_SAMPLES_54]["inputs"]["samples"]
-        logger.debug(f"Deleted samples node {NODE_SAMPLES_54} for HIGH job")
         
          # Delete samples nodes for HIGH jobs
         del workflow[NODE_VIDEO_DECODE]["inputs"]["samples"]
-        logger.debug(f"Deleted samples node {NODE_VIDEO_DECODE} for HIGH job")
 
         # Set frames to render
         workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
+        # Set start frame (skip-n-frames)
+        workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
 
         #width/height
         workflow[NODE_WIDTH]["inputs"]["value"] = VIDEO_WIDTH
@@ -93,8 +91,6 @@ class WorkflowManager:
         workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = HIGH_STEPS
         workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
 
-        # Set start frame (skip-n-frames)
-        workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
         
         #define folder to save latent
         workflow[NODE_SAVE_LATENT]["inputs"]["file_path"] = job.latent_path
@@ -102,8 +98,8 @@ class WorkflowManager:
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)
         
-        logger.info(f"Modified workflow for HIGH job #{job.job_number}")
         self.storage.save_runtime_workflow(workflow, job.prompt_name, job.job_number, "high")
+        logger.info(f"Modified workflow for HIGH job #{job.job_number}")
         # Save workflow in dry-run mode
         if is_dry_run():
             job_info = {
@@ -149,7 +145,6 @@ class WorkflowManager:
         
         # Delete latent node for LOW jobs
         del workflow[NODE_SAVE_LATENT]
-        logger.debug(f"Deleted latent node {NODE_SAVE_LATENT} for LOW job")
 
         # set folder to load latent
         workflow[NODE_LOAD_LATENT]["inputs"]["file_path"] = job.latent_path
@@ -175,13 +170,12 @@ class WorkflowManager:
         workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
 
         #load image by setting image_path
-        if job.job_number <= 2:
+        if job.job_number == 2:
             # Delete reference images node for first two jobs
+            workflow[NODE_IMAGE_BATCH_SKIP]["inputs"]["start_index"] = 0
             del workflow[NODE_VACE]["inputs"]["ref_images"]
-            logger.debug(f"Deleted reference images node for job {job.job_number}")
         else:
             workflow[NODE_REF_IMAGES]["inputs"]["image_path"] = job.reference_image_path
-            logger.debug(f"Set reference image: {job.reference_image_path}")
 
         # Set prompts
         self._set_prompts(workflow, job.positive_prompt, job.negative_prompt)

@@ -160,20 +160,21 @@ class JobOrchestrator:
                     
                     logger.debug("|" * 60)
                     for job_to_change in jobs:   
-                        logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}")
+                        logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}, total {total_frames}")
                     logger.debug("|" * 60)
                     # Calculate remaining frames for subsequent jobs
                     start_frame = 0
                     for job_to_change in jobs:
-                        remaining_frames = total_frames - start_frame
+                        remaining_frames = (total_frames - start_frame/2)
                         chunk_frames = min(FRAMES_TO_RENDER, remaining_frames)
                         if job_to_change.job_type == JobType.LOW:
                             if job_to_change.job_number <= job.job_number:
-                                start_frame += job_to_change.frames_rendered
+                                start_frame += job_to_change.frames_rendered*2
                         if job_to_change.job_number > job.job_number:
                             job_to_change.start_frame = start_frame - START_FRAME_OFFSET
                             job_to_change.frames_to_render = chunk_frames
-                            start_frame += chunk_frames - START_FRAME_OFFSET
+                            if job_to_change.job_type == JobType.LOW:
+                                start_frame += (chunk_frames - START_FRAME_OFFSET)*2
                     
                     for job_to_change in jobs:   
                         logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}")
