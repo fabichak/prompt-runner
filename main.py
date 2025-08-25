@@ -147,14 +147,10 @@ def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> boo
             # Handle uploads if not disabled
             if not args.no_upload:
                 storage = ServiceFactory.create_storage_manager()
-                
-                # Create archive if not disabled
-                if not args.no_archive:
-                    archive_path = storage.create_archive(promptName)
-                    logger.info(f"📦 Created archive: {archive_path}")
-                
+                                
                 # Upload to cloud storage
-                storage.upload_to_gcs(promptName)
+                storage.zip_and_upload_output(promptName)
+                #storage.cleanup_intermediate_files(promptName)
                 logger.info(f"☁️ Uploaded to cloud storage")
         else:
             logger.error(f"❌ Failed to process prompt: {promptName}")

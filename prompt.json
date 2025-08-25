@@ -67,11 +67,11 @@
   },
   "8": {
     "inputs": {
-      "blocks_to_swap": 40,
+      "blocks_to_swap": 0,
       "offload_img_emb": false,
       "offload_txt_emb": false,
       "use_non_blocking": true,
-      "vace_blocks_to_swap": 15
+      "vace_blocks_to_swap": 0
     },
     "class_type": "WanVideoBlockSwap",
     "_meta": {
@@ -152,6 +152,10 @@
       "feta_args": [
         "268",
         0
+      ],
+      "context_options": [
+        "401",
+        0
       ]
     },
     "class_type": "WanVideoSampler",
@@ -186,7 +190,7 @@
         0
       ],
       "ref_images": [
-        "392",
+        "399",
         0
       ]
     },
@@ -236,8 +240,8 @@
       "pingpong": false,
       "save_output": true,
       "images": [
-        "375",
-        0
+        "387",
+        1
       ],
       "audio": [
         "389",
@@ -282,7 +286,7 @@
   },
   "375": {
     "inputs": {
-      "start_index": 10,
+      "start_index": 6,
       "num_frames": 4096,
       "images": [
         "341",
@@ -304,7 +308,7 @@
       "start_index": 0,
       "end_index": -1,
       "start_image": [
-        "392",
+        "399",
         0
       ],
       "control_images": [
@@ -337,8 +341,8 @@
       "empty_cache": true,
       "gc_collect": true,
       "unload_all_models": false,
-      "any_input": [
-        "340",
+      "image_pass": [
+        "375",
         0
       ]
     },
@@ -384,60 +388,69 @@
       "title": "Load Image From Path"
     }
   },
-  "393": {
+  "399": {
     "inputs": {
-      "batch": [
-        "375",
-        0
-      ]
-    },
-    "class_type": "BatchCount+",
-    "_meta": {
-      "title": "🔧 Batch Count"
-    }
-  },
-  "394": {
-    "inputs": {
-      "expression": "a-10",
-      "a": [
-        "393",
-        0
-      ]
-    },
-    "class_type": "MathExpression|pysssss",
-    "_meta": {
-      "title": "Math Expression 🐍"
-    }
-  },
-  "395": {
-    "inputs": {
-      "path": "./image.png",
-      "overwrite": "true",
-      "image": [
-        "396",
-        0
-      ]
-    },
-    "class_type": "JWImageSaveToPath",
-    "_meta": {
-      "title": "Image Save To Path"
-    }
-  },
-  "396": {
-    "inputs": {
-      "start_index": [
-        "394",
+      "width": [
+        "21",
         0
       ],
-      "num_frames": 1,
-      "images": [
-        "375",
+      "height": [
+        "20",
+        0
+      ],
+      "method": "NEAREST",
+      "image": [
+        "392",
         0
       ]
     },
-    "class_type": "GetImageRangeFromBatch",
+    "class_type": "ResizeImageNode",
     "_meta": {
-      "title": "Get Image or Mask Range From Batch"
+      "title": "Resize Image"
+    }
+  },
+  "400": {
+    "inputs": {
+      "pixels": [
+        "399",
+        0
+      ],
+      "vae": [
+        "404",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "401": {
+    "inputs": {
+      "context_schedule": "uniform_standard",
+      "context_frames": 160,
+      "context_stride": 4,
+      "context_overlap": 100,
+      "freenoise": true,
+      "verbose": true,
+      "fuse_method": "linear",
+      "reference_latent": [
+        "400",
+        0
+      ]
+    },
+    "class_type": "WanVideoContextOptions",
+    "_meta": {
+      "title": "WanVideo Context Options"
+    }
+  },
+  "404": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
     }
   },
   "309:300": {

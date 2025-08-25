@@ -24,11 +24,8 @@ class StorageManager:
         prompt_base = BASE_OUTPUT_DIR / promptName
         directories = [
             prompt_base,
-            prompt_base / "latents",
             prompt_base / "videos",
-            prompt_base / "references", 
-            prompt_base / "combined",
-            prompt_base / "state"
+            prompt_base / "workflows"
         ]
         for directory in directories:
             directory.mkdir(parents=True, exist_ok=True)
@@ -40,14 +37,8 @@ class StorageManager:
         prompt_base = BASE_OUTPUT_DIR / promptName
         
         # Add the subfolder type
-        if dir_type == "latents":
-            subfolder = prompt_base / "latents"
-        elif dir_type == "videos":
+        if dir_type == "videos":
             subfolder = prompt_base / "videos"
-        elif dir_type == "references":
-            subfolder = prompt_base / "references"
-        elif dir_type == "combined":
-            subfolder = prompt_base / "combined"
         elif dir_type == "workflows":
             subfolder = prompt_base / "workflows"    
         else:
@@ -56,12 +47,7 @@ class StorageManager:
         # Ensure directory exists and return it
         subfolder.mkdir(parents=True, exist_ok=True)
         return subfolder
-    
-    def get_latent_path(self, promptName: str, job_number: int) -> Path:
-        """Get path for latent file"""
-        dir_path = self.get_directory(promptName, "latents")
-        return dir_path / f"job_{job_number:03d}.latent"
-    
+     
     def get_video_path(self, promptName: str, job_number: int) -> Path:
         """Get path for video file"""
         dir_path = self.get_directory(promptName, "videos")
@@ -69,20 +55,7 @@ class StorageManager:
     
     def get_video_full_path(self, promptName: str, job_number: int) -> Path:
         return f"{self.get_video_path(promptName, job_number)}_00001.mp4"
-    
-    def get_reference_path(self, promptName: str, job_number: int) -> Path:
-        """Get path for reference image"""
-        dir_path = self.get_directory(promptName, "references")
-        return dir_path / f"job_{job_number:03d}_ref.png"
-    
-    def get_combined_path(self, promptName: str, job_number: int) -> Path:
-        """Get path for combined video at a specific stage"""
-        dir_path = self.get_directory(promptName, "combined")
-        return dir_path / f"combined_{job_number:03d}"
-    
-    def get_combined_full_path(self, promptName: str, job_number: int) -> Path:
-        return f"{self.get_combined_path(promptName, job_number)}_00001.mp4"
-        
+       
     def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
         filename = f"{job_number:03d}_{job_type}.json"
         dir_path = self.get_directory(promptName, "workflows")
@@ -90,42 +63,7 @@ class StorageManager:
         with open(filepath, 'w') as f:
             json.dump(workflow, f, indent=2, default=str)
         return str(filepath)
-    
-    def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):
-        """Save job state for recovery"""
-        prompt_base = BASE_OUTPUT_DIR / promptName
-        state_dir = prompt_base / "state"
-        state_dir.mkdir(parents=True, exist_ok=True)
         
-        state_file = state_dir / f"state.json"
-        with open(state_file, 'w') as f:
-            json.dump(data, f, indent=2, default=str)
-        logger.info(f"Saved state to {state_file}")
-    
-    def load_state(self, promptName: str, state_name: str) -> Optional[Dict[str, Any]]:
-        """Load job state for recovery"""
-        prompt_base = BASE_OUTPUT_DIR / promptName
-        state_file = prompt_base / "state" / f"state.json"
-        if not state_file.exists():
-            return None
-        
-        try:
-            with open(state_file, 'r') as f:
-                data = json.load(f)
-            logger.info(f"Loaded state from {state_file}")
-            return data
-        except Exception as e:
-            logger.error(f"Error loading state: {e}")
-            return None
-    
-    def clear_state(self, promptName: str, state_name: str):
-        """Clear saved state after successful completion"""
-        prompt_base = BASE_OUTPUT_DIR / promptName
-        state_file = prompt_base / "state" / f"{state_name}.json"
-        if state_file.exists():
-            state_file.unlink()
-            logger.info(f"Cleared state file {state_file}")
-    
     def cleanup_intermediate_files(self, promptName: str, keep_final: bool = True):
         """Clean up intermediate files after successful completion"""
         directories_to_clean = [
@@ -143,23 +81,23 @@ class StorageManager:
     def zip_and_upload_output(self, promptName: str) -> bool:
         """Zip the 'combined' folder contents and upload to GCS."""
         try:
-            combined_dir = self.get_directory(promptName, "combined")
-            if not combined_dir.exists() or not any(f for f in combined_dir.rglob('*') if f.is_file()):
-                logger.error(f"'combined' directory is empty or does not exist: {combined_dir}")
+            video_dir = self.get_directory(promptName, "video")
+            if not video_dir.exists() or not any(f for f in video_dir.rglob('*') if f.is_file()):
+                logger.error(f"'combined' directory is empty or does not exist: {video_dir}")
                 return False
             
             # Create zip file in the prompt's base directory
             prompt_base = BASE_OUTPUT_DIR / promptName
             
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            zip_name_base = f"{promptName}_combined_{timestamp}"
+            zip_name_base = f"{promptName}_video_{timestamp}"
             zip_path_base = prompt_base / zip_name_base
             
             # Create zip file of the combined directory
             zip_path_str = shutil.make_archive(
                 base_name=str(zip_path_base),
                 format='zip',
-                root_dir=str(combined_dir)
+                root_dir=str(video_dir)
             )
             zip_path = Path(zip_path_str)
             logger.info(f"Created zip file: {zip_path}")
