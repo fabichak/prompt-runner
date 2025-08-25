@@ -1,11 +1,11 @@
 """Job planning logic for calculating render sequences"""
 import logging
 import math
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from pathlib import Path
 
 from models.prompt_data import PromptData
-from models.job import RenderJob, CombineJob, JobType, JobStatus
+from models.job import RenderJob, CombineJob, JobStatus
 from config import FRAMES_TO_RENDER, START_FRAME_OFFSET
 from services.service_factory import ServiceFactory
 
@@ -29,14 +29,14 @@ class JobPlanner:
         total_frames = prompt_data.total_frames
         frames_per_chunk = self.frames_per_chunk
         
-        # Calculate number of job pairs needed
+        # Calculate number of chunks needed
         num_chunks = math.ceil(total_frames / frames_per_chunk)
-        logger.info(f"Planning {num_chunks} job pairs for {total_frames} total frames ({frames_per_chunk} per chunk)")
+        logger.info(f"Planning {num_chunks} jobs for {total_frames} total frames ({frames_per_chunk} per chunk)")
         
         render_jobs = []
         combine_jobs = []
         
-        # Create render jobs (alternating HIGH/LOW pairs)
+        # Create render jobs
         current_frame = 0
         job_number = 1
         
@@ -49,10 +49,21 @@ class JobPlanner:
             remaining_frames = total_frames - current_frame
             chunk_frames = min(frames_per_chunk, remaining_frames)
             
-            # Create HIGH job (odd numbers: 1, 3, 5...)
-            high_job = RenderJob(
+            # Get reference image path
+            reference_image_path = None
+            if job_number == 1:
+                # For the first job, check if there's a reference image with same name as prompt file
+                source_path = Path(prompt_data.source_file)
+                reference_path = source_path.with_suffix(".png")
+                if reference_path.exists():
+                    reference_image_path = str(reference_path.resolve())
+            else:
+                # Use the reference from the previous job
+                reference_image_path = self.storage.get_reference_path(self.promptName, job_number - 1)
+            
+            # Create render job
+            render_job = RenderJob(
                 prompt_name=self.promptName,
-                job_type=JobType.HIGH,
                 job_number=job_number,
                 seed=random_seed,
                 start_frame=current_frame,
@@ -61,65 +72,36 @@ class JobPlanner:
                 positive_prompt=prompt_data.positive_prompt,
                 negative_prompt=prompt_data.negative_prompt,
                 latent_path=self.storage.get_latent_path(self.promptName, job_number),
-                reference_image_path= self.storage.get_reference_path(self.promptName, job_number-1) #from job-1 low output, not used in job=1
-            )
-
-            render_jobs.append(high_job)
-            job_number += 1
-            
-            reference_image_path_for_low = self.storage.get_reference_path(self.promptName, job_number-2)
-            if job_number == 2: 
-                # The source_file is the .txt prompt file. A reference image for the first
-                # chunk can be provided with the same name but a .png extension.
-                source_path = Path(prompt_data.source_file)
-                reference_image_path_for_low = str(source_path.with_suffix(".png").resolve())
-            reference_video_path = str(Path(prompt_data.source_file).with_suffix(".mp4").resolve())
-
-            # Create LOW job (even numbers: 2, 4, 6...)
-            low_job = RenderJob(
-                prompt_name=self.promptName,
-                job_type=JobType.LOW,
-                job_number=job_number,
-                start_frame=current_frame,
-                seed=random_seed,
-                frames_to_render=chunk_frames,
-                video_input_path=reference_video_path,
-                positive_prompt=prompt_data.positive_prompt,
-                negative_prompt=prompt_data.negative_prompt,
-                latent_path=self.storage.get_latent_path(self.promptName, job_number-1), #from the job-1 high output
-                reference_image_path=reference_image_path_for_low,
+                reference_image_path=reference_image_path,
                 next_reference_image_output_path=self.storage.get_reference_path(self.promptName, job_number),
                 video_output_path=self.storage.get_video_path(self.promptName, job_number),
                 video_output_full_path=self.storage.get_video_full_path(self.promptName, job_number)
             )
             
-            logger.info(f"Setting low job {low_job.job_number} with image input {low_job.reference_image_path}")
+            logger.info(f"Creating job {render_job.job_number} with frames {current_frame}-{current_frame + chunk_frames}")
+            if reference_image_path:
+                logger.info(f"  Using reference image: {reference_image_path}")
 
-            render_jobs.append(low_job)
-            job_number += 1
+            render_jobs.append(render_job)
             
-            # Update frame position for next chunk
+            # Create combine job for this render output
+            previous_combined_path = None
+            if job_number > 1:
+                previous_combined_path = self.storage.get_combined_full_path(self.promptName, job_number - 1)
+            
+            combine_job = CombineJob(
+                prompt_name=self.promptName,
+                combine_number=job_number,
+                video_name=prompt_data.video_name,
+                input_video_path=render_job.video_output_full_path,
+                previous_combined_path=previous_combined_path,
+                output_path=str(self.storage.get_combined_path(self.promptName, job_number))
+            )
+            combine_jobs.append(combine_job)
+            
+            # Update for next iteration
+            job_number += 1
             current_frame += chunk_frames - START_FRAME_OFFSET
-        
-        # Create combine jobs for each LOW job output
-        combine_number = 1
-        previous_combined_path = None
-        
-        for job in render_jobs:
-            if job.job_type == JobType.LOW:
-                combine_job = CombineJob(
-                    prompt_name=self.promptName,
-                    combine_number=combine_number,
-                    video_name=prompt_data.video_name,
-                    input_video_path=job.video_output_full_path,
-                    previous_combined_path=previous_combined_path,
-                    output_path=str(self.storage.get_combined_path(self.promptName, combine_number))
-                )
-                combine_jobs.append(combine_job)
-                
-                # Update previous path for next combine
-                previous_combined_path = self.storage.get_combined_full_path(self.promptName, combine_number)
-                combine_number += 1
         
         # Log job plan summary
         self._log_job_plan(render_jobs, combine_jobs)
@@ -149,17 +131,15 @@ class JobPlanner:
     def validate_job_sequence(self, render_jobs: List[RenderJob], total_frames: int) -> bool:
         """Validate that job sequence covers all required frames"""
         # Check frame coverage
-        # total_covered = sum(job.frames_to_render for job in render_jobs if job.job_type == JobType.HIGH)
-        # if total_covered != total_frames:
-        #     logger.error(f"Frame coverage mismatch: {total_covered} != {total_frames}")
-        #     return False
+        total_covered = sum(job.frames_to_render for job in render_jobs)
+        expected_coverage = total_frames
         
-        # Check job pairing (should have equal HIGH and LOW jobs)
-        high_jobs = [j for j in render_jobs if j.job_type == JobType.HIGH]
-        low_jobs = [j for j in render_jobs if j.job_type == JobType.LOW]
+        # Account for frame overlaps from START_FRAME_OFFSET
+        if len(render_jobs) > 1:
+            expected_coverage += (len(render_jobs) - 1) * START_FRAME_OFFSET
         
-        if len(high_jobs) != len(low_jobs):
-            logger.error(f"Job pairing mismatch: {len(high_jobs)} HIGH != {len(low_jobs)} LOW")
+        if abs(total_covered - expected_coverage) > START_FRAME_OFFSET:
+            logger.error(f"Frame coverage issue: covered {total_covered} vs expected {expected_coverage}")
             return False
         
         # Check job numbering
@@ -177,13 +157,9 @@ class JobPlanner:
         """Get list of job numbers that must complete before this job can run"""
         dependencies = []
         
-        if job.job_type == JobType.LOW:
-            # LOW jobs depend on their preceding HIGH job
+        # Each job depends on the previous job (except the first)
+        if job.job_number > 1:
             dependencies.append(job.job_number - 1)
-        
-        if job.job_type == JobType.HIGH and job.job_number >= 3:
-            # HIGH jobs from 3+ depend on the LOW job two positions back (for reference image)
-            dependencies.append(job.job_number - 2)
         
         return dependencies
     

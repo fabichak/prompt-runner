@@ -1,13 +1,8 @@
 """Job models for rendering and combining"""
 from dataclasses import dataclass, field
-from typing import Literal, Optional, Dict, Any
+from typing import Optional, Dict, Any
 from enum import Enum
 import uuid
-
-
-class JobType(Enum):
-    HIGH = "HIGH"
-    LOW = "LOW"
 
 
 class JobStatus(Enum):
@@ -20,9 +15,8 @@ class JobStatus(Enum):
 
 @dataclass
 class RenderJob:
-    """Represents a single render job (HIGH or LOW)"""
+    """Represents a single render job"""
     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    job_type: JobType = JobType.HIGH
     job_number: int = 0
     start_frame: int = 0
     seed: int = 0
@@ -54,7 +48,6 @@ class RenderJob:
         """Convert to dictionary for serialization"""
         return {
             'job_id': self.job_id,
-            'job_type': self.job_type.value,
             'job_number': self.job_number,
             'start_frame': self.start_frame,
             'frames_to_render': self.frames_to_render,
@@ -74,7 +67,6 @@ class RenderJob:
         """Create from dictionary"""
         job = cls()
         job.job_id = data.get('job_id', str(uuid.uuid4()))
-        job.job_type = JobType(data.get('job_type', 'HIGH'))
         job.job_number = data.get('job_number', 0)
         job.start_frame = data.get('start_frame', 0)
         job.frames_to_render = data.get('frames_to_render', 101)
@@ -90,7 +82,7 @@ class RenderJob:
         return job
     
     def __str__(self) -> str:
-        return f"RenderJob({self.job_type.value} #{self.job_number}, frames {self.start_frame}-{self.start_frame + self.frames_to_render})"
+        return f"RenderJob(#{self.job_number}, frames {self.start_frame}-{self.start_frame + self.frames_to_render})"
 
 
 @dataclass

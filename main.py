@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Prompt Runner v2 - Main entry point
-Complex video generation system with HIGH/LOW noise model alternation
+Prompt Runner - Main entry point
+Video generation system using ComfyUI workflows
 """
 
 import argparse
@@ -16,14 +16,10 @@ import config
 config.CLIENT_ID = str(uuid.uuid4())
 
 from models.prompt_data import PromptData
-from models.job import JobType
 from services.job_orchestrator import JobOrchestrator
-from services.dual_instance_orchestrator import DualInstanceOrchestrator
 from services.service_factory import ServiceFactory
-from services.dry_run_manager import enable_dry_run, dry_run_manager
 from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
-from config import ENABLE_DUAL_INSTANCE
 
 
 def setup_logging(log_level: str = "INFO", timestamp: str = None):
@@ -32,13 +28,7 @@ def setup_logging(log_level: str = "INFO", timestamp: str = None):
     
     # Determine log file location
     log_filename = f"prompt_runner_{timestamp}.log"
-    
-    # Use dry-run logs directory if in dry-run mode
-    logs_dir = dry_run_manager.get_logs_directory()
-    if logs_dir:
-        log_filepath = logs_dir / log_filename
-    else:
-        log_filepath = Path(log_filename)
+    log_filepath = Path(log_filename)
     
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
@@ -48,393 +38,271 @@ def setup_logging(log_level: str = "INFO", timestamp: str = None):
             logging.FileHandler(str(log_filepath))
         ]
     )
+    
+    return logging.getLogger(__name__)
 
 
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="Prompt Runner v2 - Complex video generation with Wan2.2 workflow",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Process all prompt files in default directory
-  python main.py
-  
-  # Process specific prompt file
-  python main.py --prompt-file my_prompt.txt
-  
-  # Resume from saved state
-  python main.py --resume promptName
-  
-  # Keep RunPod instance running after completion
-  python main.py --no-shutdown
-  
-  # Process with custom frames per chunk
-  python main.py --frames-per-chunk 150
-        """
+        description="Prompt Runner - Video generation automation for ComfyUI"
     )
     
-    # Input options
+    # Core arguments
     parser.add_argument(
-        "--prompt-file",
-        type=str,
-        help="Specific prompt file to process (default: process all in prompt_files/)"
+        "prompt_file",
+        nargs="?",
+        help="Path to prompt text file (optional if using --prompt-dir)"
     )
+    
     parser.add_argument(
         "--prompt-dir",
         type=str,
-        default="prompt_files",
-        help="Directory containing prompt files (default: prompt_files)"
+        help="Directory containing prompt files to process"
     )
     
-    # Execution options
     parser.add_argument(
         "--resume",
         type=str,
-        metavar="PROMPT_NAME",
-        help="Resume from saved state for given prompt name"
-    )
-    parser.add_argument(
-        "--frames-per-chunk",
-        type=int,
-        default=config.FRAMES_TO_RENDER,
-        help=f"Frames to render per chunk (default: {config.FRAMES_TO_RENDER})"
-    )
-    parser.add_argument(
-        "--max-retries",
-        type=int,
-        default=config.MAX_RETRIES,
-        help=f"Maximum retries per job (default: {config.MAX_RETRIES})"
+        help="Resume from saved state file (provide promptName)"
     )
     
-    # Output options
     parser.add_argument(
-        "--output-dir",
-        type=str,
-        help="Custom output directory (default: /workspace/ComfyUI/output/prompt-runner)"
-    )
-    parser.add_argument(
-        "--no-upload",
-        action="store_true",
-        help="Skip GCS upload after completion"
-    )
-    parser.add_argument(
-        "--keep-intermediate",
-        action="store_true",
-        help="Keep intermediate files after completion"
+        "--start-at",
+        type=int,
+        default=0,
+        help="Start processing at this prompt index (for batch processing)"
     )
     
-    # RunPod options
+    # RunPod control
     parser.add_argument(
         "--no-shutdown",
         action="store_true",
-        default=config.DEFAULT_NO_SHUTDOWN,
-        help="Do NOT shutdown RunPod instance after completion (default: don't shutdown)"
-    )
-    parser.add_argument(
-        "--force-shutdown",
-        action="store_true",
-        help="Force shutdown RunPod instance after completion"
-    )
-    parser.add_argument(
-        "--dual-instance",
-        action="store_true",
-        help="Enable dual ComfyUI instance mode (HIGH jobs on port 8188, LOW jobs on port 8189)"
-    )
-    parser.add_argument(
-        "--single-instance",
-        action="store_true", 
-        help="Force single ComfyUI instance mode (overrides config)"
+        help="Don't shutdown RunPod instance after completion"
     )
     
-    # Debug options
+    # Upload control
+    parser.add_argument(
+        "--no-upload",
+        action="store_true",
+        help="Skip uploading to cloud storage"
+    )
+    
+    parser.add_argument(
+        "--no-archive",
+        action="store_true",
+        help="Skip creating tar archives"
+    )
+    
+    # Logging
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",
-        help="Logging level (default: INFO)"
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Plan jobs without executing them"
-    )
-    parser.add_argument(
-        "--validate-only",
-        action="store_true",
-        help="Only validate prompt files and workflows"
+        help="Set logging level"
     )
     
-    return parser.parse_args()
+    parser.add_argument(
+        "--full-logs",
+        action="store_true",
+        help="Show detailed output from all operations"
+    )
+    
+    args = parser.parse_args()
+    
+    # Validate arguments
+    if not args.prompt_file and not args.prompt_dir:
+        parser.error("Either prompt_file or --prompt-dir must be provided")
+    
+    return args
 
 
-def process_single_prompt(prompt_data: PromptData, args, orchestrator: JobOrchestrator, promptName: str) -> bool:
-    """Process a single prompt file"""
+def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> bool:
+    """Process a single prompt through the pipeline
+    
+    Args:
+        prompt_data: The prompt data to process
+        promptName: Name for organizing this prompt's files
+        args: Command line arguments
+        
+    Returns:
+        True if successful, False otherwise
+    """
     logger = logging.getLogger(__name__)
     
-
-    if args.resume:
-        promptName = args.resume
-
-    logger.info("=" * 80)
-    logger.info(f"NAME: {promptName}")
-    logger.info(f"PROCESSING: {prompt_data.video_name}")
-    logger.info(f"Total frames: {prompt_data.total_frames}")
-    logger.info("=" * 80)
-    
-    # Update frames per chunk if specified
-    if args.frames_per_chunk != config.FRAMES_TO_RENDER:
-        config.FRAMES_TO_RENDER = args.frames_per_chunk
-        orchestrator.job_planner.frames_per_chunk = args.frames_per_chunk
-    
-    logger.info(f"Frames per chunk: {config.FRAMES_TO_RENDER}")
-
-    # Plan jobs
-    planner = JobPlanner(promptName, frames_per_chunk=args.frames_per_chunk)
-    
-    if args.dry_run:
-        render_jobs, combine_jobs = planner.calculate_job_sequence(prompt_data)
+    try:
+        # Create job orchestrator
+        orchestrator = JobOrchestrator()
         
-        # Save job plans to temp folder
-        dry_run_manager.save_job_plan("render", render_jobs, {
-            "video_name": prompt_data.video_name,
-            "total_frames": prompt_data.total_frames,
-            "frames_per_chunk": args.frames_per_chunk
-        })
-        
-        dry_run_manager.save_job_plan("combine", combine_jobs, {
-            "video_name": prompt_data.video_name,
-            "total_combines": len(combine_jobs)
-        })
-        
-        # Generate workflows for dry-run analysis
-        logger.info("🔧 Generating workflows for dry-run analysis...")
-        workflow_manager = ServiceFactory.create_workflow_manager(
-            Path("prompt.json"), 
-            Path("combine.json")
+        # Execute the pipeline
+        success = orchestrator.execute_full_pipeline(
+            prompt_data=prompt_data,
+            promptName=promptName,
+            resume_from_state=args.resume
         )
         
-        # Generate render job workflows
-        # for job in render_jobs:
-        #     try:
-        #         if job.job_type == JobType.HIGH:
-        #             workflow_manager.modify_for_high_job(job)
-        #         else:
-        #             workflow_manager.modify_for_low_job(job)
-        #     except Exception as e:
-        #         logger.warning(f"Could not generate workflow for job {job.job_number}: {e}")
-        
-        # Generate combine job workflows  
-        for job in combine_jobs:
-            try:
-                workflow_manager.create_combine_workflow(job)
-            except Exception as e:
-                logger.warning(f"Could not generate combine workflow for job {job.combine_number}: {e}")
-        
-        logger.info("🎭 DRY RUN - Jobs planned but not executed")
-        logger.info(f"📊 Render jobs: {len(render_jobs)}, Combine jobs: {len(combine_jobs)}")
-        return True
-    
-    # Execute pipeline
-    success = orchestrator.execute_full_pipeline(
-        prompt_data,
-        promptName,
-        resume_from_state=args.resume
-    )
-    
-    if success:
-        logger.info(f"✅ Successfully processed {prompt_data.video_name}")
-        
-        # Upload to GCS if requested
-        if not args.no_upload:
-            storage = ServiceFactory.create_storage_manager()
-            upload_success = storage.zip_and_upload_output(promptName)
-            if upload_success:
-                logger.info(f"✅ Uploaded {prompt_data.video_name} to GCS")
-                # Clean up intermediate files
-                #storage.cleanup_intermediate_files(promptName, keep_final=True)
+        if success:
+            logger.info(f"✅ Successfully processed prompt: {promptName}")
+            
+            # Handle uploads if not disabled
+            if not args.no_upload:
+                storage = ServiceFactory.create_storage_manager()
                 
-                # Clear saved state
-                storage.clear_state(promptName, promptName)
-                logger.info("Cleaning up intermediate files and state...")
-
-            else:
-                logger.warning(f"⚠️ Failed to upload {prompt_data.video_name} to GCS")
+                # Create archive if not disabled
+                if not args.no_archive:
+                    archive_path = storage.create_archive(promptName)
+                    logger.info(f"📦 Created archive: {archive_path}")
+                
+                # Upload to cloud storage
+                storage.upload_to_gcs(promptName)
+                logger.info(f"☁️ Uploaded to cloud storage")
+        else:
+            logger.error(f"❌ Failed to process prompt: {promptName}")
+            
+        return success
         
-        # Clean up if requested
-        if not args.keep_intermediate:
-            storage = ServiceFactory.create_storage_manager()
-            #storage.cleanup_intermediate_files(promptName, keep_final=True)
-            logger.info("Cleaned up intermediate files")
-    else:
-        logger.error(f"❌ Failed to process {prompt_data.video_name}")
+    except Exception as e:
+        logger.error(f"Error processing prompt {promptName}: {e}", exc_info=True)
+        return False
+
+
+def process_prompt_directory(prompt_dir: Path, args) -> int:
+    """Process all prompt files in a directory
     
-    return success
+    Args:
+        prompt_dir: Directory containing prompt files
+        args: Command line arguments
+        
+    Returns:
+        Number of successfully processed prompts
+    """
+    logger = logging.getLogger(__name__)
+    
+    # Find all .txt files in directory
+    prompt_files = sorted(prompt_dir.glob("*.txt"))
+    
+    if not prompt_files:
+        logger.warning(f"No prompt files found in {prompt_dir}")
+        return 0
+    
+    logger.info(f"Found {len(prompt_files)} prompt files")
+    
+    # Apply start-at offset
+    if args.start_at > 0:
+        logger.info(f"Starting at prompt index {args.start_at}")
+        prompt_files = prompt_files[args.start_at:]
+    
+    successful = 0
+    failed = 0
+    
+    for idx, prompt_file in enumerate(prompt_files, start=args.start_at):
+        logger.info("=" * 80)
+        logger.info(f"Processing prompt {idx + 1}: {prompt_file.name}")
+        logger.info("=" * 80)
+        
+        try:
+            # Parse prompt file
+            parser = PromptFileParser(str(prompt_file))
+            prompt_data = parser.parse()
+            
+            # Generate promptName from filename
+            promptName = prompt_file.stem
+            
+            # Process the prompt
+            if process_single_prompt(prompt_data, promptName, args):
+                successful += 1
+            else:
+                failed += 1
+                
+        except Exception as e:
+            logger.error(f"Failed to process {prompt_file}: {e}")
+            failed += 1
+    
+    logger.info("=" * 80)
+    logger.info(f"Batch processing complete: {successful} successful, {failed} failed")
+    
+    return successful
 
 
 def main():
     """Main entry point"""
+    # Generate timestamp for this run
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # Parse arguments
     args = parse_arguments()
     
-    # Enable dry-run mode if requested (before logging setup)
-    if args.dry_run:
-        enable_dry_run()
-    
-    # Setup logging (after dry-run mode is potentially enabled)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    setup_logging(args.log_level, timestamp)
-    logger = logging.getLogger(__name__)
+    # Set up logging
+    logger = setup_logging(args.log_level, timestamp)
     
     logger.info("=" * 80)
-    logger.info("PROMPT RUNNER V2 - Starting")
-    logger.info(f"Client ID: {config.CLIENT_ID}")
+    logger.info("PROMPT RUNNER - Video Generation System")
     logger.info("=" * 80)
+    logger.info(f"Session ID: {config.CLIENT_ID}")
+    logger.info(f"Timestamp: {timestamp}")
     
-    if args.dry_run:
-        logger.info("🎭 DRY-RUN MODE ENABLED")
-    
-    # Show RunPod info if available
-    runpod = ServiceFactory.create_runpod_manager()
-    runpod_info = runpod.get_instance_info()
-    if runpod_info['pod_id'] != 'N/A':
-        logger.info(f"RunPod Instance: {runpod_info}")
-    
-    # Check system health
-    if not runpod.check_instance_health():
-        logger.warning("System health check failed - continuing anyway")
-    
-    # Set up storage
-    storage = ServiceFactory.create_storage_manager()
-    
-    # Check disk space (using a temp prompt name for global check)
-    temp_prompt = "_global_check"
-    if not storage.check_disk_space(temp_prompt, required_gb=10.0):
-        logger.error("Insufficient disk space")
-        sys.exit(1)
-    
-    # Handle resume mode
-    if args.resume:
-        logger.info(f"Resuming from state: {args.resume}")
-        # Load state will be handled in orchestrator
-    
-    # Get prompt files to process
-    prompt_files = []
-    
-    if args.prompt_file:
-        # Process specific file
-        prompt_path = Path(args.prompt_file)
-        prompt_data = PromptFileParser.parse_prompt_file(prompt_path)
-        if prompt_data:
-            prompt_files.append((prompt_path, prompt_data))
-        else:
-            logger.error(f"Failed to parse prompt file: {prompt_path}")
-            sys.exit(1)
-    else:
-        # Process all files in directory
-        prompt_dir = Path(args.prompt_dir)
-        prompt_files = PromptFileParser.validate_prompt_directory(prompt_dir)
-        
-        if not prompt_files:
-            logger.error(f"No valid prompt files found in {prompt_dir}")
-            sys.exit(1)
-    
-    logger.info(f"Found {len(prompt_files)} prompt file(s) to process")
-    
-    # Validate only mode
-    if args.validate_only:
-        logger.info("Validation complete - exiting (--validate-only)")
-        sys.exit(0)
-    
-    # Create orchestrator - choose between single and dual instance mode
-    # Command line flags override config
-    use_dual_instance = ENABLE_DUAL_INSTANCE
-    if args.dual_instance:
-        use_dual_instance = True
-        logger.info("🎯 Dual instance mode enabled via command line")
-    elif args.single_instance:
-        use_dual_instance = False
-        logger.info("🎯 Single instance mode forced via command line")
-    
-    if use_dual_instance:
-        logger.info("🚀 Starting in DUAL INSTANCE mode")
-        orchestrator = DualInstanceOrchestrator()
-    else:
-        logger.info("🚀 Starting in SINGLE INSTANCE mode")
-        orchestrator = JobOrchestrator()
-    
-    # Process each prompt file
-    total_success = 0
-    total_failed = 0
-    
-    for prompt_path, prompt_data in prompt_files:
-        try:
-            logger.info(f"\nProcessing: {prompt_path}")
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            success = process_single_prompt(prompt_data, args, orchestrator, timestamp)
+    try:
+        # Process based on input mode
+        if args.prompt_dir:
+            # Batch processing mode
+            prompt_dir = Path(args.prompt_dir)
+            if not prompt_dir.exists():
+                logger.error(f"Directory not found: {prompt_dir}")
+                return 1
             
-            if success:
-                total_success += 1
-            else:
-                total_failed += 1
+            successful = process_prompt_directory(prompt_dir, args)
+            
+            if successful == 0:
+                logger.error("No prompts were successfully processed")
+                return 1
                 
-        except KeyboardInterrupt:
-            logger.warning("Interrupted by user")
-            break
-        except Exception as e:
-            logger.error(f"Error processing {prompt_path}: {e}")
-            total_failed += 1
-    
-    # Final summary
-    logger.info("=" * 80)
-    logger.info("PROMPT RUNNER V2 - Complete")
-    logger.info(f"Successful: {total_success}")
-    logger.info(f"Failed: {total_failed}")
-    logger.info("=" * 80)
-    
-    # Show disk usage across all prompts
-    # Note: This now shows usage for the last processed prompt only
-    # TODO: Consider adding a method to get total disk usage across all prompts
-    if 'timestamp' in locals():
-        disk_usage = storage.get_disk_usage(timestamp)
-        logger.info(f"Disk usage for last prompt: {disk_usage}")
-    else:
-        logger.info("No disk usage to report (no prompts processed)")
-    
-    # Show dry-run summary if applicable
-    if args.dry_run:
-        summary = dry_run_manager.get_summary()
-        logger.info("=" * 80)
-        logger.info("DRY-RUN SUMMARY")
-        logger.info("=" * 80)
-        logger.info(f"🗂️ Temp directory: {summary.get('temp_directory', 'N/A')}")
-        logger.info(f"📄 Workflows generated: {summary.get('workflows_generated', 0)}")
+        else:
+            # Single prompt mode
+            prompt_file = Path(args.prompt_file)
+            if not prompt_file.exists():
+                logger.error(f"Prompt file not found: {prompt_file}")
+                return 1
+            
+            # Parse the prompt file
+            parser = PromptFileParser(str(prompt_file))
+            prompt_data = parser.parse()
+            
+            # Generate promptName from filename
+            promptName = prompt_file.stem
+            
+            logger.info(f"Processing: {prompt_data.video_name}")
+            logger.info(f"Total frames: {prompt_data.total_frames}")
+            
+            # Calculate job sequence for preview
+            job_planner = JobPlanner(promptName)
+            render_jobs, combine_jobs = job_planner.calculate_job_sequence(prompt_data)
+            
+            logger.info(f"Will create {len(render_jobs)} render jobs and {len(combine_jobs)} combine jobs")
+            
+            # Process the prompt
+            if not process_single_prompt(prompt_data, promptName, args):
+                logger.error("Failed to process prompt")
+                return 1
         
-        if hasattr(storage, 'get_simulation_summary'):
-            sim_summary = storage.get_simulation_summary()
-            logger.info(f"☁️ Simulated GCS uploads: {sim_summary.get('total_uploads', 0)}")
-            logger.info(f"📁 Simulated file copies: {sim_summary.get('total_copies', 0)}")
+        # Handle RunPod shutdown if requested
+        if not args.no_shutdown:
+            try:
+                runpod = ServiceFactory.create_runpod_manager()
+                runpod.shutdown_current_pod()
+                logger.info("🔌 RunPod instance shutdown initiated")
+            except Exception as e:
+                logger.warning(f"Could not shutdown RunPod: {e}")
         
-        logger.info("=" * 80)
-        dry_run_manager.cleanup()
-    
-    # Handle RunPod shutdown
-    if args.force_shutdown:
-        logger.info("Force shutdown requested")
-        runpod.shutdown_instance(force=True)
-    elif not args.no_shutdown and total_failed == 0:
-        logger.info("All jobs completed successfully - considering shutdown")
-        # Only shutdown if explicitly requested with force
-        if args.force_shutdown:
-            runpod.shutdown_instance(force=True)
-    else:
-        logger.info("RunPod instance will remain running")
-    
-    # Exit with appropriate code
-    if total_failed > 0:
-        sys.exit(1)
-    else:
-        sys.exit(0)
+        logger.info("✅ All operations completed successfully")
+        return 0
+        
+    except KeyboardInterrupt:
+        logger.info("⚠️ Interrupted by user")
+        return 130
+    except Exception as e:
+        logger.error(f"Fatal error: {e}", exc_info=True)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

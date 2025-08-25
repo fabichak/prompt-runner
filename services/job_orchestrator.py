@@ -3,16 +3,14 @@ import json
 import logging
 import time
 import subprocess
-import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
-from models.job import RenderJob, CombineJob, JobType, JobStatus
+from models.job import RenderJob, CombineJob, JobStatus
 from models.job_result import JobResult
 from models.prompt_data import PromptData
 from services.service_factory import ServiceFactory
-from services.dry_run_manager import is_dry_run, dry_run_manager
 from utils.job_planner import JobPlanner
 from config import (
     FRAMES_TO_RENDER, REFERENCE_FRAME_OFFSET, MAX_RETRIES,
@@ -32,7 +30,6 @@ class JobOrchestrator:
             Path(JSON_WORKFLOW_FILE),
             Path(COMBINE_WORKFLOW_FILE)
         )
-        # job_planner will be created per-prompt with promptName
         
         # Track execution state
         self.completed_jobs = []
@@ -55,10 +52,6 @@ class JobOrchestrator:
             # Store promptName for use in storage operations
             self.current_prompt_name = promptName
             
-            # Set video name for dry-run organized storage
-            if is_dry_run():
-                dry_run_manager.set_current_video_name(prompt_data.video_name)
-            
             # Connect to ComfyUI
             if not self.comfyui_client.connect():
                 logger.error("Failed to connect to ComfyUI")
@@ -67,10 +60,6 @@ class JobOrchestrator:
             # Load or create execution state
             if resume_from_state:
                 self.current_prompt_name = resume_from_state
-                # state = self.storage.load_state(promptName, resume_from_state)
-                # if state:
-                #     self.restore_state(state)
-                #     logger.info(f"Resumed from state: {resume_from_state}")
             
             # Ensure prompt directories exist
             self.storage.ensure_directories(promptName)
@@ -91,7 +80,7 @@ class JobOrchestrator:
             logger.info("STARTING RENDER JOBS")
             logger.info("=" * 60)
             
-            render_results = self.execute_render_jobs(prompt_data, render_jobs, prompt_data.total_frames)
+            render_results = self.execute_render_jobs(render_jobs)
             
             if not all(r.success for r in render_results):
                 logger.error("Some render jobs failed")
@@ -120,17 +109,11 @@ class JobOrchestrator:
         finally:
             self.comfyui_client.disconnect()
     
-    def execute_render_jobs(self, prompt_data: PromptData, jobs: List[RenderJob], total_frames: int) -> List[JobResult]:
+    def execute_render_jobs(self, jobs: List[RenderJob]) -> List[JobResult]:
         """Execute all render jobs in sequence"""
         results = []
         
         for job in jobs:
-            # Check dependencies  
-            # Note: For now, run jobs in sequence. Dependencies handled by job ordering.
-            if job.status == JobStatus.SKIPPED:
-                logger.warning(f"Skipping {job} - already marked as skipped")
-                continue
-            
             # Skip if already completed (for resume)
             if job.job_number in self.completed_jobs:
                 logger.info(f"Skipping {job} - already completed")
@@ -146,34 +129,12 @@ class JobOrchestrator:
                 self.completed_jobs.append(job.job_number)
                 job.status = JobStatus.COMPLETED
                 
-                # Extract reference image if this is a LOW job
-                if job.job_type == JobType.LOW:
-                    ref_success, frames_rendered = self.extract_reference_image(job)
-                    job.frames_rendered = frames_rendered
-                    
-                    logger.debug("|" * 60)
-                    for job_to_change in jobs:   
-                        logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}, total {total_frames}")
-                    logger.debug("|" * 60)
-                    # Calculate remaining frames for subsequent jobs
-                    start_frame = 0
-                    for job_to_change in jobs:
-                        remaining_frames = (total_frames - start_frame)
-                        chunk_frames = min(FRAMES_TO_RENDER, remaining_frames)
-                        if job_to_change.job_type == JobType.LOW:
-                            if job_to_change.job_number <= job.job_number:
-                                start_frame += job_to_change.frames_rendered
-                        if job_to_change.job_number > job.job_number:
-                            job_to_change.start_frame = start_frame - START_FRAME_OFFSET
-                            job_to_change.frames_to_render = chunk_frames
-                            if job_to_change.job_type == JobType.LOW:
-                                start_frame += (chunk_frames - START_FRAME_OFFSET)
-                    
-                    for job_to_change in jobs:   
-                        logger.debug(f"\job {job_to_change.job_number} start-frame {job_to_change.start_frame} frames-to-render {job_to_change.frames_to_render}")
-                    logger.debug("|" * 60)
-                    if not ref_success:
-                        logger.error(f"Failed to extract reference image for job {job.job_number}")
+                # Extract reference image for next job
+                ref_success, frames_rendered = self.extract_reference_image(job)
+                job.frames_rendered = frames_rendered
+                
+                if not ref_success:
+                    logger.warning(f"Failed to extract reference image for job {job.job_number}")
             else:
                 self.failed_jobs.append(job.job_number)
                 job.status = JobStatus.FAILED
@@ -195,21 +156,13 @@ class JobOrchestrator:
         )
         
         try:
-            # Debug logging to understand the job type issue
-            logger.info(f"🔍 Processing job {job.job_number}: job_type={job.job_type}, type={type(job.job_type)}")
+            logger.info(f"🔍 Processing job {job.job_number}")
             
-            # Modify workflow based on job type
-            if job.job_type == JobType.HIGH:
-                logger.info(f"🔵 Calling modify_for_high_job for job {job.job_number}")
-                workflow = self.workflow_manager.modify_for_high_job(job)
-            else:
-                logger.info(f"🟡 Calling modify_for_low_job for job {job.job_number}")
-                workflow = self.workflow_manager.modify_for_low_job(job)
+            # Modify workflow for the job using prompt.json
+            workflow = self.workflow_manager.modify_workflow_for_job(job)
             
             # Execute workflow with retry
-            success = True
-            if job.job_type == JobType.LOW:
-                success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
+            success, prompt_id, error = self.comfyui_client.execute_with_retry(workflow)
             
             if success:
                 result.complete(True)
@@ -284,7 +237,7 @@ class JobOrchestrator:
     def extract_reference_image(self, job: RenderJob) -> Tuple[bool, int]:
         """Extract reference image from video output
         
-        Extracts frame at position (frames_to_render - 10) from the video
+        Returns a tuple of (success, frames_rendered)
         """
         try:
             if not job.video_output_path:
@@ -296,25 +249,10 @@ class JobOrchestrator:
                 logger.error(f"Video not found: {video_path}")
                 return False, 0
             
-            
             # Get reference image path
             ref_path = self.storage.get_reference_path(self.current_prompt_name, job.job_number)
             
-            # Handle dry-run mode
-            if is_dry_run():
-                # Simulate ffmpeg extraction
-                ref_path.parent.mkdir(parents=True, exist_ok=True)
-                frame_num = job.frames_to_render - REFERENCE_FRAME_OFFSET
-                with open(ref_path, 'w') as f:
-                    f.write(f"# DRY-RUN SIMULATED REFERENCE IMAGE\n")
-                    f.write(f"# Extracted from: {video_path}\n")
-                    f.write(f"# Frame number: {frame_num}\n")
-                    f.write(f"# Job: {job.job_number}\n")
-                    f.write(f"# Created at: {datetime.now().isoformat()}\n")
-                
-                logger.info(f"🖼️ [DRY-RUN] Simulated extracting reference frame {frame_num} to {ref_path}")
-                return True, job.frames_to_render
-            
+            # Get frame count using ffprobe
             cmd = [
                 "ffprobe",
                 "-v", "error",
@@ -329,32 +267,32 @@ class JobOrchestrator:
             try:
                 frames_rendered = int(result.stdout.strip())
                 logger.info(f"Frames rendered for {job.video_output_full_path}: {frames_rendered}")
-                return True, frames_rendered
+                
+                # Extract reference frame at the appropriate position
+                frame_num = max(1, frames_rendered - REFERENCE_FRAME_OFFSET)
+                
+                # Use ffmpeg to extract frame
+                extract_cmd = [
+                    "ffmpeg",
+                    "-i", str(video_path),
+                    "-vf", f"select=eq(n\\,{frame_num})",
+                    "-vframes", "1",
+                    "-y",  # Overwrite if exists
+                    str(ref_path)
+                ]
+                
+                extract_result = subprocess.run(extract_cmd, capture_output=True, text=True)
+                
+                if extract_result.returncode == 0 and ref_path.exists():
+                    logger.info(f"Extracted reference frame {frame_num} to {ref_path}")
+                    return True, frames_rendered
+                else:
+                    logger.error(f"Failed to extract reference: {extract_result.stderr}")
+                    return True, frames_rendered  # Still return frames count even if extraction failed
+                    
             except ValueError:
                 logger.error(f"Failed to parse frame count from ffprobe. stdout: '{result.stdout.strip()}', stderr: '{result.stderr}'")
                 return False, 0
-
-            # # # Calculate frame number to extract (frames_to_render - 10)
-            # # frame_num = max(1, frames_rendered - REFERENCE_FRAME_OFFSET)
-
-            # # # Use ffmpeg to extract frame
-            # # cmd = [
-            # #     "ffmpeg",
-            # #     "-i", str(video_path),
-            # #     "-vf", f"select=eq(n\\,{frame_num})",
-            # #     "-vframes", "1",
-            # #     "-y",  # Overwrite if exists
-            # #     str(ref_path)
-            # # ]
-            
-            # # result = subprocess.run(cmd, capture_output=True, text=True)
-            
-            # if result.returncode == 0 and ref_path.exists():
-            #     logger.info(f"Extracted reference frame {frame_num} to {ref_path}")
-            #     return True, frames_rendered
-            # else:
-            #     logger.error(f"Failed to extract reference: {result.stderr}")
-            #     return False, 0
                 
         except Exception as e:
             logger.error(f"Error extracting reference image: {e}")

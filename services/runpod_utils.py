@@ -7,26 +7,12 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 
-def _is_dry_run() -> bool:
-    """Check if we're in dry-run mode"""
-    try:
-        from services.dry_run_manager import is_dry_run
-        return is_dry_run()
-    except ImportError:
-        return os.getenv('DRY_RUN', '').lower() in ('true', '1', 'yes')
-
-
 class RunPodManager:
     """Handles RunPod instance lifecycle"""
     
     @staticmethod
     def get_pod_id() -> Optional[str]:
         """Get the current RunPod instance ID"""
-        # In dry-run mode, return mock ID for any machine
-        if _is_dry_run():
-            logger.info("🎭 [DRY-RUN] Using mock RunPod ID for non-RunPod environment")
-            return "dry-run-mock-pod-id"
-            
         try:
             pod_id = os.environ.get('RUNPOD_POD_ID')
             if pod_id:
@@ -42,16 +28,6 @@ class RunPodManager:
     @staticmethod
     def shutdown_instance(force: bool = False) -> bool:
         """Shutdown the RunPod instance"""
-        # In dry-run mode, simulate shutdown
-        if _is_dry_run():
-            logger.info("🎭 [DRY-RUN] Simulating RunPod instance shutdown")
-            if force:
-                logger.info("🔌 [DRY-RUN] Force shutdown simulated successfully")
-                return True
-            else:
-                logger.info("⏭️ [DRY-RUN] Shutdown requested but not forced, simulating skip")
-                return False
-        
         try:
             pod_id = RunPodManager.get_pod_id()
             if not pod_id:
@@ -80,13 +56,13 @@ class RunPodManager:
             return False
     
     @staticmethod
+    def shutdown_current_pod() -> bool:
+        """Convenience method to shutdown the current pod"""
+        return RunPodManager.shutdown_instance(force=True)
+    
+    @staticmethod
     def check_instance_health() -> bool:
         """Check if the RunPod instance is healthy"""
-        # In dry-run mode, always return healthy
-        if _is_dry_run():
-            logger.info("🎭 [DRY-RUN] System health check bypassed - simulating healthy system")
-            return True
-        
         try:
             # Check if we're running on RunPod
             if not os.environ.get('RUNPOD_POD_ID'):
@@ -125,32 +101,6 @@ class RunPodManager:
     @staticmethod
     def get_instance_info() -> Dict[str, Any]:
         """Get information about the RunPod instance"""
-        # In dry-run mode, return mock data that works on any machine
-        if _is_dry_run():
-            import platform
-            import socket
-            
-            mock_info = {
-                'pod_id': 'dry-run-mock-pod-id',
-                'pod_hostname': f'dry-run-{socket.gethostname()}',
-                'gpu_count': 'DRY-RUN-MOCK',
-                'cpu_count': str(os.cpu_count() or 'UNKNOWN'),
-                'mem_gb': 'DRY-RUN-MOCK',
-                'public_ip': '127.0.0.1',
-                'api_key': 'DRY-RUN-MODE',
-                'system_info': {
-                    'platform': platform.system(),
-                    'architecture': platform.machine(),
-                    'python_version': platform.python_version(),
-                    'hostname': socket.gethostname()
-                },
-                'dry_run_mode': True
-            }
-            
-            logger.info(f"🎭 [DRY-RUN] Mock RunPod instance info: {mock_info}")
-            return mock_info
-        
-        # Normal RunPod environment
         info = {
             'pod_id': os.environ.get('RUNPOD_POD_ID', 'N/A'),
             'pod_hostname': os.environ.get('RUNPOD_POD_HOSTNAME', 'N/A'),
@@ -158,8 +108,7 @@ class RunPodManager:
             'cpu_count': os.environ.get('RUNPOD_CPU_COUNT', 'N/A'),
             'mem_gb': os.environ.get('RUNPOD_MEM_GB', 'N/A'),
             'public_ip': os.environ.get('RUNPOD_PUBLIC_IP', 'N/A'),
-            'api_key': 'SET' if os.environ.get('RUNPOD_API_KEY') else 'NOT SET',
-            'dry_run_mode': False
+            'api_key': 'SET' if os.environ.get('RUNPOD_API_KEY') else 'NOT SET'
         }
         
         logger.info(f"RunPod instance info: {info}")

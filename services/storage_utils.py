@@ -12,7 +12,6 @@ from datetime import datetime
 from config import (
     GCS_BUCKET_PATH, BASE_OUTPUT_DIR
 )
-from services.dry_run_manager import PathJSONEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +88,7 @@ class StorageManager:
         dir_path = self.get_directory(promptName, "workflows")
         filepath = dir_path / filename
         with open(filepath, 'w') as f:
-            json.dump(workflow, f, indent=2, cls=PathJSONEncoder)
+            json.dump(workflow, f, indent=2, default=str)
         return str(filepath)
     
     def save_state(self, promptName: str, state_name: str, data: Dict[str, Any]):

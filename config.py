@@ -1,5 +1,5 @@
 """
-Configuration constants for Prompt Runner v2
+Configuration constants for Prompt Runner
 """
 import os
 from pathlib import Path
@@ -17,13 +17,13 @@ INPUT_PROMPT_DIR = "prompt_files"
 
 # Try /workspace first, fallback to local directory for testing
 try:
-    _test_workspace = Path("/workspace")
-    if _test_workspace.exists() and _test_workspace.is_dir():
+    workspace = Path("/workspace")
+    if workspace.exists() and workspace.is_dir():
         # Check if we can write to workspace
-        _test_file = _test_workspace / "test_write"
+        test_file = workspace / "test_write"
         try:
-            _test_file.touch()
-            _test_file.unlink()
+            test_file.touch()
+            test_file.unlink()
             BASE_OUTPUT_DIR = Path("/workspace/ComfyUI/output/prompt-runner")
         except (PermissionError, OSError):
             BASE_OUTPUT_DIR = Path("output/prompt-runner")
@@ -41,18 +41,16 @@ STATE_DIR = "state"
 # GCS Configuration
 GCS_BUCKET_PATH = "gs://aiof-saved-files/"
 
-# Model Configuration
-HIGH_LORA = "wan2.2_high_t2v.safetensors"
+# Model Configuration (using single model configuration)
 LOW_LORA = "wan2.2_low_t2v.safetensors"
-HIGH_MODEL = "Wan2.2_T2V_High_Noise_14B_VACE-Q8_0.gguf"
 LOW_MODEL = "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf"
 
-#VIDEO
+# VIDEO
 FRAMES_TO_RENDER = 161  # Constant frames per chunk
 START_FRAME_OFFSET = 10
-REFERENCE_FRAME_OFFSET = START_FRAME_OFFSET  # Hardcoded. the first 10 frames are always thrown away. then we need a refence of 10 before that, so 20
+REFERENCE_FRAME_OFFSET = START_FRAME_OFFSET  # The first 10 frames are always thrown away
 STEPS = 8
-HIGH_STEPS = 4
+HIGH_STEPS = 4  # Keep for backward compatibility in case it's referenced elsewhere
 DEFAULT_TOTAL_FRAMES = 500  # Default if not specified
 VIDEO_WIDTH = 720
 VIDEO_HEIGHT = 1280
@@ -78,7 +76,6 @@ NODE_IMAGE_BATCH_SKIP = "375"
 NODE_LOAD_VIDEO_PATH = "389"
 NODE_SAVE_VIDEO_PATH = "395"
 
-
 # Combine workflow node IDs
 COMBINE_NODE_VIDEOS = "25"
 COMBINE_NODE_IMAGE_BATCH = "30"
@@ -90,37 +87,6 @@ COMBINE_NODE_RESCALE = "35"
 # Retry Configuration
 MAX_RETRIES = 3
 RETRY_DELAY = 5  # seconds
-
-# Dual ComfyUI Instance Configuration
-ENABLE_DUAL_INSTANCE = True  # Enable dual instance mode
-COMFYUI_INSTANCES = [
-    {
-        "instance_id": "high_priority",
-        "host": "127.0.0.1", 
-        "port": 8188,
-        "job_types": ["HIGH"],
-        "max_concurrent": 1,
-        "enabled": True
-    },
-    {
-        "instance_id": "low_priority",
-        "host": "127.0.0.1",
-        "port": 8189, 
-        "job_types": ["LOW"],
-        "max_concurrent": 1,
-        "enabled": True
-    }
-]
-
-# Fallback configuration for single instance mode
-SINGLE_INSTANCE_CONFIG = {
-    "instance_id": "main",
-    "host": "127.0.0.1",
-    "port": 8188,
-    "job_types": ["HIGH", "LOW"],
-    "max_concurrent": 1,
-    "enabled": True
-}
 
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
