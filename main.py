@@ -198,8 +198,7 @@ def process_prompt_directory(prompt_dir: Path, args) -> int:
         
         try:
             # Parse prompt file
-            parser = PromptFileParser(str(prompt_file))
-            prompt_data = parser.parse()
+            prompt_data = PromptFileParser.parse_prompt_file(Path(prompt_file))
             
             # Generate promptName from filename
             promptName = prompt_file.stem

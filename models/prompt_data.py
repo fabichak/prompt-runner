@@ -7,6 +7,7 @@ from typing import Optional
 class PromptData:
     """Represents parsed prompt file data"""
     video_name: str
+    start_frame: int
     total_frames: int
     positive_prompt: str
     negative_prompt: str

@@ -81,7 +81,7 @@ class StorageManager:
     def zip_and_upload_output(self, promptName: str) -> bool:
         """Zip the 'combined' folder contents and upload to GCS."""
         try:
-            video_dir = self.get_directory(promptName, "video")
+            video_dir = self.get_directory(promptName, "videos")
             if not video_dir.exists() or not any(f for f in video_dir.rglob('*') if f.is_file()):
                 logger.error(f"'combined' directory is empty or does not exist: {video_dir}")
                 return False

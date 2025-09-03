@@ -5,7 +5,7 @@ from typing import List, Tuple
 from pathlib import Path
 
 from models.prompt_data import PromptData
-from models.job import RenderJob, CombineJob, JobStatus
+from models.job import RenderJob, JobStatus
 from config import FRAMES_TO_RENDER
 from services.service_factory import ServiceFactory
 
@@ -40,7 +40,7 @@ class JobPlanner:
             prompt_name=self.promptName,
             job_number=job_number,
             seed=random_seed,
-            start_frame=0,
+            start_frame=prompt_data.start_frame,
             frames_to_render=prompt_data.total_frames,
             video_input_path=reference_video_path,
             reference_image_path=reference_image_path,

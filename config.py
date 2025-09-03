@@ -9,11 +9,11 @@ SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = None  # Will be set at runtime
 
 # Workflow Files
-JSON_WORKFLOW_FILE = "prompt.json"
+JSON_WORKFLOW_FILE = "prompts/v2v.json"
 COMBINE_WORKFLOW_FILE = "combine.json"
 
 # Directory Configuration
-INPUT_PROMPT_DIR = "prompt_files"
+INPUT_PROMPT_DIR = "v2v-files"
 
 # Try /workspace first, fallback to local directory for testing
 try:
@@ -40,6 +40,9 @@ FRAMES_TO_RENDER = 161  # Constant frames per chunk
 STEPS = 8
 VIDEO_WIDTH = 720
 VIDEO_HEIGHT = 1280
+CONTEXT_OPTIONS_FRAMES = 220
+CONTEXT_OPTIONS_OVERLAP = 100
+
 
 # Node IDs for workflow modification
 NODE_WIDTH = "21"
@@ -51,6 +54,7 @@ NODE_START_FRAME = "348"
 NODE_VIDEO_COMBINE = "340"
 NODE_PROMPT = "53"
 NODE_LOAD_VIDEO_PATH = "389"
+NODE_CONTEXT_OPTIONS = "401"
 
 # Retry Configuration
 MAX_RETRIES = 3

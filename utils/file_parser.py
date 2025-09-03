@@ -50,24 +50,31 @@ class PromptFileParser:
                 video_name = video_name[:-4]
             
             try:
-                total_frames = int(parts[1].strip())
+                start_frame = int(parts[1].strip())
+            except (ValueError, IndexError) as e:
+                logger.error(f"Invalid start frames: {e}")
+                return None
+
+            try:
+                total_frames = int(parts[2].strip())
                 if total_frames <= 0:
                     raise ValueError("Total frames must be positive")
             except (ValueError, IndexError) as e:
                 logger.error(f"Invalid total frames: {e}")
                 return None
             
-            positive_prompt = parts[2].strip()
+            positive_prompt = parts[3].strip()
             if not positive_prompt:
                 logger.error("Positive prompt is empty")
                 return None
             
             # Negative prompt can be empty
-            negative_prompt = parts[3].strip() if len(parts) > 3 else ""
+            negative_prompt = parts[4].strip() if len(parts) > 3 else ""
             
             # Create and validate PromptData
             prompt_data = PromptData(
                 video_name=video_name,
+                start_frame=start_frame,
                 total_frames=total_frames,
                 positive_prompt=positive_prompt,
                 negative_prompt=negative_prompt,

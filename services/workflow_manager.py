@@ -7,10 +7,10 @@ from typing import Dict, Any, Optional
 
 from models.job import RenderJob
 from config import (
-    NODE_HEIGHT, NODE_LOAD_VIDEO_PATH, NODE_REF_IMAGES, NODE_SAMPLES_54, NODE_FRAMES_VALUE, NODE_VIDEO_COMBINE, 
+    CONTEXT_OPTIONS_FRAMES, CONTEXT_OPTIONS_OVERLAP, NODE_CONTEXT_OPTIONS, NODE_HEIGHT, NODE_LOAD_VIDEO_PATH, NODE_REF_IMAGES, NODE_SAMPLES_54, NODE_FRAMES_VALUE, NODE_VIDEO_COMBINE, 
     NODE_START_FRAME, NODE_PROMPT, NODE_WIDTH, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH
 )
-from services.service_factory import ServiceFactory
+from services.storage_utils import StorageManager
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +18,8 @@ logger = logging.getLogger(__name__)
 class WorkflowManager:
     """Manages workflow JSON modifications for render and combine jobs"""
     
-    def __init__(self, base_workflow_path: Path, combine_workflow_path: Path):
-        self.storage = ServiceFactory.create_storage_manager()
+    def __init__(self, base_workflow_path: Path, combine_workflow_path: Path, storage_manager: StorageManager):
+        self.storage = storage_manager
         self.base_workflow = self._load_workflow(base_workflow_path)
         self.combine_workflow = self._load_workflow(combine_workflow_path)
         
@@ -40,7 +40,7 @@ class WorkflowManager:
             return None
     
     def modify_workflow_for_job(self, job: RenderJob) -> Dict[str, Any]:
-        """Modify workflow for a render job using prompt.json as the base
+        """Modify workflow for a render job using prompts/v2v.json as the base
         
         Modifications:
         - Set frames to render and start frame
@@ -70,6 +70,19 @@ class WorkflowManager:
 
         workflow[NODE_PROMPT]["inputs"]["positive_prompt"] = job.positive_prompt
         workflow[NODE_PROMPT]["inputs"]["negative_prompt"] = job.negative_prompt
+
+        context_options_frames = CONTEXT_OPTIONS_FRAMES
+        context_options_overlap = CONTEXT_OPTIONS_OVERLAP
+        
+        if job.frames_to_render <= CONTEXT_OPTIONS_FRAMES:
+            context_options_frames = job.frames_to_render
+        
+        if context_options_frames <= context_options_overlap:
+            context_options_overlap = context_options_frames-1
+        
+        workflow[NODE_CONTEXT_OPTIONS]["inputs"]["context_frames"] = context_options_frames
+        workflow[NODE_CONTEXT_OPTIONS]["inputs"]["context_overlap"] = min(context_options_overlap, CONTEXT_OPTIONS_OVERLAP)
+
         
         self.storage.save_runtime_workflow(workflow, job.prompt_name, job.job_number, "render")
         logger.info(f"Modified workflow for job #{job.job_number}")

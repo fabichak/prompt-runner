@@ -9,7 +9,11 @@ prompt_files/
 
 # C extensions
 *.so
-
+.serena/
+i2i-files/
+v2v-files/
+t2v-files/
+i2v-files/
 # Distribution / packaging
 .Python
 build/
