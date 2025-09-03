@@ -18,6 +18,7 @@ config.CLIENT_ID = str(uuid.uuid4())
 from models.prompt_data import PromptData
 from services.job_orchestrator import JobOrchestrator
 from services.service_factory import ServiceFactory
+from services.i2i_orchestrator import I2IOrchestrator
 from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
 
@@ -48,11 +49,19 @@ def parse_arguments():
         description="Prompt Runner - Video generation automation for ComfyUI"
     )
     
+    # Mode selection
+    parser.add_argument(
+        "--mode",
+        choices=["v2v", "i2i"],
+        default="v2v",
+        help="Operation mode: v2v (video-to-video) or i2i (image-to-image)"
+    )
+    
     # Core arguments
     parser.add_argument(
         "prompt_file",
         nargs="?",
-        help="Path to prompt text file (optional if using --prompt-dir)"
+        help="Path to prompt text file (optional if using --prompt-dir or --mode i2i)"
     )
     
     parser.add_argument(
@@ -94,6 +103,13 @@ def parse_arguments():
         help="Skip creating tar archives"
     )
     
+    # i2i mode specific arguments
+    parser.add_argument(
+        "--continuous",
+        action="store_true",
+        help="Continuously monitor for new images (i2i mode only)"
+    )
+    
     # Logging
     parser.add_argument(
         "--log-level",
@@ -110,9 +126,11 @@ def parse_arguments():
     
     args = parser.parse_args()
     
-    # Validate arguments
-    if not args.prompt_file and not args.prompt_dir:
-        parser.error("Either prompt_file or --prompt-dir must be provided")
+    # Validate arguments based on mode
+    if args.mode == "v2v":
+        if not args.prompt_file and not args.prompt_dir:
+            parser.error("Either prompt_file or --prompt-dir must be provided for v2v mode")
+    # i2i mode doesn't require prompt files
     
     return args
 
@@ -160,6 +178,50 @@ def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> boo
     except Exception as e:
         logger.error(f"Error processing prompt {promptName}: {e}", exc_info=True)
         return False
+
+
+def run_i2i_mode(args) -> int:
+    """Run the i2i image processing mode
+    
+    Args:
+        args: Command line arguments
+        
+    Returns:
+        0 for success, non-zero for failure
+    """
+    logger = logging.getLogger(__name__)
+    
+    logger.info("=" * 80)
+    logger.info("Starting I2I (Image-to-Image) Mode")
+    logger.info("=" * 80)
+    
+    try:
+                # Create and run i2i orchestrator
+        orchestrator = I2IOrchestrator()
+        
+        # Display configuration
+        status = orchestrator.get_status()
+        logger.info(f"CFG Values: {status['cfg_values']}")
+        logger.info(f"Renders per CFG: {status['renders_per_cfg']}")
+        logger.info(f"Continuous mode: {args.continuous}")
+        
+        # Run the orchestrator
+        orchestrator.run(continuous=args.continuous)
+        
+        # Final status
+        final_status = orchestrator.get_status()
+        logger.info("=" * 80)
+        logger.info("I2I Processing Complete")
+        logger.info(f"Processed: {final_status['processed']} images")
+        logger.info(f"Failed: {final_status['failed']} images")
+        logger.info(f"Pending: {final_status['pending']} images")
+        logger.info("=" * 80)
+        
+        return 0
+        
+    except Exception as e:
+        logger.error(f"Error in i2i mode: {e}", exc_info=True)
+        return 1
 
 
 def process_prompt_directory(prompt_dir: Path, args) -> int:
@@ -235,8 +297,15 @@ def main():
     logger.info("=" * 80)
     logger.info(f"Session ID: {config.CLIENT_ID}")
     logger.info(f"Timestamp: {timestamp}")
+    logger.info(f"Mode: {args.mode.upper()}")
     
     try:
+        # Route based on mode
+        if args.mode == "i2i":
+            # Run i2i mode
+            return run_i2i_mode(args)
+        
+        # Otherwise run v2v mode
         # Process based on input mode
         if args.prompt_dir:
             # Batch processing mode

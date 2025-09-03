@@ -1,0 +1,441 @@
+{
+  "5": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAE"
+    }
+  },
+  "53": {
+    "inputs": {
+      "filename_prefix": "comfyui_i2i",
+      "images": [
+        "335",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save result"
+    }
+  },
+  "279": {
+    "inputs": {
+      "delimiter": "",
+      "clean_whitespace": "false",
+      "text_a": [
+        "284",
+        0
+      ]
+    },
+    "class_type": "Text Concatenate",
+    "_meta": {
+      "title": "Text Concatenate"
+    }
+  },
+  "282": {
+    "inputs": {
+      "find": "woman",
+      "replace": [
+        "285",
+        0
+      ],
+      "text": [
+        "283",
+        2
+      ]
+    },
+    "class_type": "Text Find and Replace",
+    "_meta": {
+      "title": "Find and Replace"
+    }
+  },
+  "283": {
+    "inputs": {
+      "text_input": "",
+      "task": "more_detailed_caption",
+      "fill_mask": false,
+      "keep_model_loaded": false,
+      "max_new_tokens": 1024,
+      "num_beams": 3,
+      "do_sample": true,
+      "output_mask_select": "",
+      "seed": 879560174893219,
+      "image": [
+        "365",
+        0
+      ],
+      "florence2_model": [
+        "331",
+        0
+      ]
+    },
+    "class_type": "Florence2Run",
+    "_meta": {
+      "title": "Florence2Run"
+    }
+  },
+  "284": {
+    "inputs": {
+      "find": "girl",
+      "replace": [
+        "285",
+        0
+      ],
+      "text": [
+        "282",
+        0
+      ]
+    },
+    "class_type": "Text Find and Replace",
+    "_meta": {
+      "title": "Find and Replace"
+    }
+  },
+  "285": {
+    "inputs": {
+      "String": "OFA1M1-clothed"
+    },
+    "class_type": "String",
+    "_meta": {
+      "title": "replace \"woman/girl\" caption with"
+    }
+  },
+  "286": {
+    "inputs": {
+      "text_0": "The image shows a young OFA1M1-clothed sitting at a table in an outdoor cafe. She is wearing a pink blazer and a white tank top. She has long blonde hair and is holding a glass of iced coffee in her right hand. The OFA1M1-clothed is smiling and looking directly at the camera. The background is blurred, but it appears to be a busy street with other tables and chairs. The overall mood of the image is relaxed and casual.",
+      "text": [
+        "279",
+        0
+      ]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "Florence Text (Auto generated)"
+    }
+  },
+  "288": {
+    "inputs": {
+      "text": [
+        "327",
+        0
+      ],
+      "clip": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "298": {
+    "inputs": {
+      "unet_name": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf"
+    },
+    "class_type": "UnetLoaderGGUF",
+    "_meta": {
+      "title": "Unet Loader (GGUF)"
+    }
+  },
+  "327": {
+    "inputs": {
+      "Input": 1,
+      "text1": [
+        "279",
+        0
+      ],
+      "text2": [
+        "343",
+        0
+      ]
+    },
+    "class_type": "CR Text Input Switch",
+    "_meta": {
+      "title": "🔀 CR Text Input Switch"
+    }
+  },
+  "331": {
+    "inputs": {
+      "model": "microsoft/Florence-2-base",
+      "precision": "fp16",
+      "attention": "sdpa",
+      "convert_to_safetensors": false
+    },
+    "class_type": "DownloadAndLoadFlorence2Model",
+    "_meta": {
+      "title": "DownloadAndLoadFlorence2Model"
+    }
+  },
+  "332": {
+    "inputs": {
+      "PowerLoraLoaderHeaderWidget": {
+        "type": "PowerLoraLoaderHeaderWidget"
+      },
+      "lora_1": {
+        "on": true,
+        "lora": "Wan2.2-Lightning_T2V-v1.1-A14B-4steps-lora_LOW_fp16.safetensors",
+        "strength": 0.7
+      },
+      "lora_2": {
+        "on": false,
+        "lora": "Wan\\lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16.safetensors",
+        "strength": 0.4
+      },
+      "lora_3": {
+        "on": true,
+        "lora": "WAN2.2-LowNoise_SmartphoneSnapshotPhotoReality_v3_by-AI_Characters.safetensors",
+        "strength": 0.9
+      },
+      "lora_4": {
+        "on": false,
+        "lora": "DetailEnhancerV1.safetensors",
+        "strength": 0.2
+      },
+      "lora_5": {
+        "on": true,
+        "lora": "xxta-maya-clothed-000132.safetensors",
+        "strength": 1
+      },
+      "➕ Add Lora": "",
+      "model": [
+        "298",
+        0
+      ],
+      "clip": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "Power Lora Loader (rgthree)",
+    "_meta": {
+      "title": "🍬Loras"
+    }
+  },
+  "333": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "334": {
+    "inputs": {
+      "seed": 422805869274985,
+      "steps": 8,
+      "cfg": 3.3000000000000003,
+      "sampler_name": "res_2s",
+      "scheduler": "bong_tangent",
+      "denoise": 0.5500000000000002,
+      "model": [
+        "332",
+        0
+      ],
+      "positive": [
+        "288",
+        0
+      ],
+      "negative": [
+        "340",
+        0
+      ],
+      "latent_image": [
+        "336",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "335": {
+    "inputs": {
+      "samples": [
+        "334",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "336": {
+    "inputs": {
+      "pixels": [
+        "345",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "337": {
+    "inputs": {
+      "width": 960,
+      "height": 1280,
+      "interpolation": "lanczos",
+      "method": "fill / crop",
+      "condition": "always",
+      "multiple_of": 16,
+      "image": [
+        "365",
+        0
+      ]
+    },
+    "class_type": "ImageResize+",
+    "_meta": {
+      "title": "🔧 Image Resize"
+    }
+  },
+  "340": {
+    "inputs": {
+      "text": "8k, UHD, hyper-realism, cinematic, glossy finish, shallow depth of field, cinematic bokeh, plastic skin, uncanny anatomy, frame-perfect symmetry, blurred background, fat, old, milf, big lips, asian",
+      "clip": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "343": {
+    "inputs": {
+      "text": "The image shows a female singer performing on stage. She is holding a microphone in her right hand and her mouth is open as she screams. She has her eyes almost closed to show her agressive stance. She has blonde hair styled straight and she is wearing a black leather outfit with silver studs and chains around her waist with pentagrams. The outfit has a high neckline and long sleeves. She also has multiple bracelets and rings on her fingers. The background is blurred, but it appears to be a stage with purple lights."
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Your own Prompt"
+    }
+  },
+  "345": {
+    "inputs": {
+      "upscale_method": "nearest-exact",
+      "scale_by": 1.0000000000000002,
+      "image": [
+        "337",
+        0
+      ]
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": {
+      "title": "Upscale Image By"
+    }
+  },
+  "348": {
+    "inputs": {
+      "text": [
+        "350",
+        0
+      ],
+      "clip": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "349": {
+    "inputs": {
+      "text": "8k, UHD, hyper-realism, cinematic, glossy finish, shallow depth of field, cinematic bokeh, plastic skin, uncanny anatomy, frame-perfect symmetry, blurred background, fat, old, milf, big lips, asian",
+      "clip": [
+        "333",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "350": {
+    "inputs": {
+      "text": "this is the internal part of a gym, dimly lit, a bit dark"
+    },
+    "class_type": "Text Multiline",
+    "_meta": {
+      "title": "Your own Prompt"
+    }
+  },
+  "358": {
+    "inputs": {
+      "mode": "normal",
+      "foreground_opacity": 1,
+      "foreground_scale": 1,
+      "position_x": 50,
+      "position_y": 50,
+      "foreground": [
+        "360",
+        0
+      ],
+      "foreground_mask": [
+        "360",
+        1
+      ]
+    },
+    "class_type": "AILab_ImageCombiner",
+    "_meta": {
+      "title": "Image Combiner (RMBG) 🖼️"
+    }
+  },
+  "359": {
+    "inputs": {
+      "model": "isnet-general-use: general purpose",
+      "providers": "CUDA"
+    },
+    "class_type": "RemBGSession+",
+    "_meta": {
+      "title": "🔧 RemBG Session"
+    }
+  },
+  "360": {
+    "inputs": {
+      "rembg_session": [
+        "359",
+        0
+      ],
+      "image": [
+        "335",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "365": {
+    "inputs": {
+      "image": "C:\\projects\\aiof\\prompt-runner\\i2i-files\\coffee-1.jpg",
+      "custom_width": 0,
+      "custom_height": 0
+    },
+    "class_type": "VHS_LoadImagePath",
+    "_meta": {
+      "title": "Load Image (Path) 🎥🅥🅗🅢"
+    }
+  }
+}

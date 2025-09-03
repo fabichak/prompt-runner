@@ -1,0 +1,8 @@
+/mnt/c/projects/aiof/prompt-runner/i2i-files/coffee-1.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/coffee-2.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/coffee-3.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/coffee-4.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/gym-1.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/gym-2.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/gym-3.jpg
+/mnt/c/projects/aiof/prompt-runner/i2i-files/gym-6.jpg
