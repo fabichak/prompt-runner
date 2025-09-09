@@ -1,224 +1,202 @@
 {
-  "1": {
+  "6": {
     "inputs": {
-      "backend": "inductor",
-      "fullgraph": false,
-      "mode": "default",
-      "dynamic": false,
-      "dynamo_cache_size_limit": 64,
-      "compile_transformer_blocks_only": true,
-      "dynamo_recompile_limit": 128
-    },
-    "class_type": "WanVideoTorchCompileSettings",
-    "_meta": {
-      "title": "WanVideo Torch Compile Settings"
-    }
-  },
-  "3": {
-    "inputs": {
-      "model_name": "umt5-xxl-enc-bf16.safetensors",
-      "precision": "bf16",
-      "load_device": "offload_device",
-      "quantization": "fp8_e4m3fn"
-    },
-    "class_type": "LoadWanVideoT5TextEncoder",
-    "_meta": {
-      "title": "WanVideo T5 Text Encoder Loader"
-    }
-  },
-  "4": {
-    "inputs": {
-      "model": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf",
-      "base_precision": "fp16_fast",
-      "quantization": "disabled",
-      "load_device": "offload_device",
-      "attention_mode": "sageattn",
-      "compile_args": [
-        "1",
-        0
-      ],
-      "block_swap_args": [
-        "8",
-        0
-      ],
-      "lora": [
-        "309:300",
+      "text": "The image is a portrait of a young OFA1M1-clothed with blonde hair and cat ears on her head. She is wearing a white bikini and matching panties. She has a big smile on her face and is posing with both arms open. The background is a plain white wall. The overall mood of the image is playful and provocative. she has no tattoos. She is dancing.",
+      "clip": [
+        "12",
         0
       ]
     },
-    "class_type": "WanVideoModelLoader",
+    "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "WanVideo Model Loader"
+      "title": "CLIP Text Encode (Prompt)"
     }
   },
-  "5": {
+  "7": {
     "inputs": {
-      "model_name": "wan_2.1_vae.safetensors",
-      "precision": "bf16",
-      "compile_args": [
-        "1",
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+      "clip": [
+        "12",
         0
       ]
     },
-    "class_type": "WanVideoVAELoader",
+    "class_type": "CLIPTextEncode",
     "_meta": {
-      "title": "WanVideo VAE Loader"
+      "title": "CLIP Text Encode (Prompt)"
     }
   },
-  "8": {
+  "12": {
     "inputs": {
-      "blocks_to_swap": 0,
-      "offload_img_emb": false,
-      "offload_txt_emb": false,
-      "use_non_blocking": true,
-      "vace_blocks_to_swap": 0
+      "clip_name": "split_files/text_encoders/umt5_xxl_fp16.safetensors",
+      "type": "wan",
+      "device": "default"
     },
-    "class_type": "WanVideoBlockSwap",
+    "class_type": "CLIPLoader",
     "_meta": {
-      "title": "WanVideo Block Swap"
+      "title": "Load CLIP"
     }
   },
-  "19": {
+  "13": {
     "inputs": {
-      "value": 161
+      "vae_name": "Wan2_1_VAE_fp32.safetensors"
     },
-    "class_type": "INTConstant",
+    "class_type": "VAELoader",
     "_meta": {
-      "title": "LENGTH"
+      "title": "Load VAE"
     }
   },
-  "20": {
+  "17": {
     "inputs": {
-      "value": 1280
+      "video": "4.mp4",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
     },
-    "class_type": "INTConstant",
+    "class_type": "VHS_LoadVideo",
     "_meta": {
-      "title": "HEIGHT"
+      "title": "Load Video (Upload) 🎥🅥🅗🅢"
     }
   },
-  "21": {
+  "22": {
     "inputs": {
-      "value": 720
-    },
-    "class_type": "INTConstant",
-    "_meta": {
-      "title": "WIDTH"
-    }
-  },
-  "53": {
-    "inputs": {
-      "positive_prompt": "The setting to be an indoor space of a bedroom. OFA1M1 is wearing black short panties and a white crop bra.\n\nsh4rpn3ss 4k HDR. clear skin, masterpiece, subscatering photorealistic skin texture, detailed skin, visible pores, subsurface scattering, fine vellus hair, subtle skin imperfections, natural freckles, subsurface scattering,soft natural volumetric cinematic light, 8k RAW photo, sharp focus, f/1.8 aperture, and shallow depth of field",
-      "negative_prompt": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, plastic skin, doll-like, airbrushed, perfectly smooth skin, cartoon, anime, 3d render, CGI, porcelain skin, oversaturated, unnatural color, jpeg artifacts, blurry, low quality, deformed, mutated",
-      "force_offload": true,
-      "use_disk_cache": true,
-      "device": "gpu",
-      "t5": [
-        "3",
+      "x": 0,
+      "y": 0,
+      "resize_source": false,
+      "destination": [
+        "23",
+        0
+      ],
+      "source": [
+        "115",
+        0
+      ],
+      "mask": [
+        "27",
         0
       ]
     },
-    "class_type": "WanVideoTextEncode",
+    "class_type": "ImageCompositeMasked",
     "_meta": {
-      "title": "WanVideo TextEncode"
+      "title": "ImageCompositeMasked"
     }
   },
-  "54": {
-    "inputs": {
-      "steps": 8,
-      "cfg": 1.0000000000000002,
-      "shift": 8,
-      "seed": 1013166398531279,
-      "force_offload": true,
-      "scheduler": "dpm++_sde",
-      "riflex_freq_index": 0,
-      "denoise_strength": 1,
-      "batched_cfg": false,
-      "rope_function": "comfy",
-      "start_step": 0,
-      "end_step": -1,
-      "add_noise_to_samples": false,
-      "model": [
-        "4",
-        0
-      ],
-      "image_embeds": [
-        "384",
-        0
-      ],
-      "text_embeds": [
-        "53",
-        0
-      ],
-      "feta_args": [
-        "268",
-        0
-      ],
-      "context_options": [
-        "401",
-        0
-      ]
-    },
-    "class_type": "WanVideoSampler",
-    "_meta": {
-      "title": "WanVideo Sampler"
-    }
-  },
-  "144": {
+  "23": {
     "inputs": {
       "width": [
-        "21",
+        "90",
         0
       ],
       "height": [
-        "20",
+        "91",
         0
       ],
-      "num_frames": [
-        "19",
+      "batch_size": [
+        "17",
+        1
+      ],
+      "color": 16777215
+    },
+    "class_type": "EmptyImage",
+    "_meta": {
+      "title": "EmptyImage"
+    }
+  },
+  "24": {
+    "inputs": {
+      "image": "4.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "27": {
+    "inputs": {
+      "value": 0.20000000000000004,
+      "width": [
+        "90",
         0
       ],
-      "strength": 2,
-      "vace_start_percent": 0,
-      "vace_end_percent": 0.85,
-      "tiled_vae": false,
-      "vae": [
-        "5",
-        0
-      ],
-      "input_frames": [
-        "377",
-        0
-      ],
-      "ref_images": [
-        "399",
+      "height": [
+        "91",
         0
       ]
     },
-    "class_type": "WanVideoVACEEncode",
+    "class_type": "SolidMask",
     "_meta": {
-      "title": "WanVideo VACE Encode"
+      "title": "SolidMask"
     }
   },
-  "268": {
+  "38": {
     "inputs": {
-      "weight": 2.0000000000000004,
-      "start_percent": 0,
-      "end_percent": 1
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "ControlPreview",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "116",
+        0
+      ]
     },
-    "class_type": "WanVideoEnhanceAVideo",
+    "class_type": "VHS_VideoCombine",
     "_meta": {
-      "title": "WanVideo Enhance-A-Video"
+      "title": "Video Combine 🎥🅥🅗🅢"
     }
   },
-  "302": {
+  "60": {
+    "inputs": {
+      "shift": 8,
+      "model": [
+        "89",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingSD3",
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "78": {
+    "inputs": {
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "bbaudio/SuperUltimateVACEUpscale",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 0,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "80": {
     "inputs": {
       "ckpt_name": "depth_anything_v2_vitl.pth",
       "resolution": [
-        "21",
+        "90",
         0
       ],
       "image": [
-        "389",
+        "114",
         0
       ]
     },
@@ -227,274 +205,404 @@
       "title": "Depth Anything V2 - Relative"
     }
   },
-  "340": {
+  "84": {
     "inputs": {
-      "frame_rate": 30,
-      "loop_count": 0,
-      "filename_prefix": "test1/test-01",
-      "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 0,
-      "save_metadata": false,
-      "trim_to_audio": false,
-      "pingpong": false,
-      "save_output": true,
-      "images": [
-        "387",
-        1
-      ],
-      "audio": [
-        "389",
-        2
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  },
-  "341": {
-    "inputs": {
-      "enable_vae_tiling": false,
-      "tile_x": 512,
-      "tile_y": 512,
-      "tile_stride_x": 256,
-      "tile_stride_y": 256,
-      "normalization": "default",
-      "vae": [
-        "5",
+      "coarse": "disable",
+      "resolution": [
+        "91",
         0
       ],
-      "samples": [
-        "54",
-        1
+      "image": [
+        "115",
+        0
       ]
     },
-    "class_type": "WanVideoDecode",
+    "class_type": "LineArtPreprocessor",
     "_meta": {
-      "title": "WanVideo Decode"
+      "title": "Realistic Lineart"
     }
   },
-  "348": {
+  "85": {
     "inputs": {
-      "value": 280
+      "image": [
+        "84",
+        0
+      ]
+    },
+    "class_type": "ImageInvert",
+    "_meta": {
+      "title": "Invert Image"
+    }
+  },
+  "86": {
+    "inputs": {
+      "sharpen_radius": 1,
+      "sigma": 10,
+      "alpha": 0.10000000000000002,
+      "image": [
+        "85",
+        0
+      ]
+    },
+    "class_type": "ImageSharpen",
+    "_meta": {
+      "title": "Image Sharpen"
+    }
+  },
+  "89": {
+    "inputs": {
+      "sage_attention": "sageattn_qk_int8_pv_fp16_triton",
+      "model": [
+        "121",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "90": {
+    "inputs": {
+      "value": 720
     },
     "class_type": "INTConstant",
     "_meta": {
-      "title": "START FRAME"
+      "title": "Width Upscale"
     }
   },
-  "375": {
+  "91": {
     "inputs": {
-      "start_index": 6,
-      "num_frames": 4096,
-      "images": [
-        "341",
-        0
-      ]
+      "value": 1280
     },
-    "class_type": "GetImageRangeFromBatch",
+    "class_type": "INTConstant",
     "_meta": {
-      "title": "Get Image or Mask Range From Batch"
+      "title": "Height Upscale"
     }
   },
-  "377": {
+  "97": {
     "inputs": {
-      "num_frames": [
-        "19",
+      "model_name": "RealESRGAN_x2.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "Load Upscale Model"
+    }
+  },
+  "104": {
+    "inputs": {
+      "width_upscale": [
+        "90",
         0
       ],
-      "empty_frame_level": 0.5,
-      "start_index": 0,
-      "end_index": -1,
-      "start_image": [
-        "399",
+      "height_upscale": [
+        "91",
         0
       ],
-      "control_images": [
-        "302",
-        0
-      ]
-    },
-    "class_type": "WanVideoVACEStartToEndFrame",
-    "_meta": {
-      "title": "WanVideo VACE Start To End Frame"
-    }
-  },
-  "384": {
-    "inputs": {
-      "empty_cache": true,
-      "gc_collect": true,
-      "unload_all_models": false,
-      "any_input": [
-        "144",
-        0
-      ]
-    },
-    "class_type": "VRAM_Debug",
-    "_meta": {
-      "title": "VRAM Debug"
-    }
-  },
-  "387": {
-    "inputs": {
-      "empty_cache": true,
-      "gc_collect": true,
-      "unload_all_models": false,
-      "image_pass": [
-        "375",
-        0
-      ]
-    },
-    "class_type": "VRAM_Debug",
-    "_meta": {
-      "title": "VRAM Debug"
-    }
-  },
-  "389": {
-    "inputs": {
-      "video": "",
-      "force_rate": 0,
-      "custom_width": [
-        "21",
-        0
-      ],
-      "custom_height": [
-        "20",
-        0
-      ],
-      "frame_load_cap": [
-        "19",
-        0
-      ],
-      "skip_first_frames": [
-        "348",
-        0
-      ],
-      "select_every_nth": 1,
-      "format": "AnimateDiff"
-    },
-    "class_type": "VHS_LoadVideoPath",
-    "_meta": {
-      "title": "Load Video (Path) 🎥🅥🅗🅢"
-    }
-  },
-  "392": {
-    "inputs": {
-      "image": "ComfyUI_00001_-assets\\ComfyUI_00001_.png [output]"
-    },
-    "class_type": "LoadImageFromPath",
-    "_meta": {
-      "title": "Load Image From Path"
-    }
-  },
-  "399": {
-    "inputs": {
       "width": [
-        "21",
+        "90",
         0
       ],
       "height": [
-        "20",
+        "91",
         0
       ],
-      "method": "NEAREST",
-      "image": [
-        "392",
+      "length": 181,
+      "pad_mask_limit": 64,
+      "crossfade_frame": 16,
+      "loopback_crossfade": 0,
+      "crop_ref": false,
+      "ref_as_init_frame": true,
+      "color_match": true,
+      "color_ref": "reference_image",
+      "noise_aug": 0.15,
+      "seed": 1027767355252118,
+      "steps": 4,
+      "cfg": 2.5,
+      "sampler_name": "res_2m_ode",
+      "scheduler": "bong_tangent",
+      "denoise": 0.95,
+      "model": [
+        "60",
         0
-      ]
-    },
-    "class_type": "ResizeImageNode",
-    "_meta": {
-      "title": "Resize Image"
-    }
-  },
-  "400": {
-    "inputs": {
-      "pixels": [
-        "399",
+      ],
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
         0
       ],
       "vae": [
-        "404",
+        "13",
+        0
+      ],
+      "input_video": [
+        "116",
+        0
+      ],
+      "croparea_list": [
+        "118",
+        0
+      ],
+      "reference_image": [
+        "112",
+        0
+      ],
+      "control_video": [
+        "116",
+        0
+      ],
+      "nag_params": [
+        "109",
         0
       ]
     },
-    "class_type": "VAEEncode",
+    "class_type": "SuperUltimateVACEUpscale",
     "_meta": {
-      "title": "VAE Encode"
+      "title": "SuperUltimate VACE Upscale"
     }
   },
-  "401": {
+  "106": {
     "inputs": {
-      "context_schedule": "uniform_standard",
-      "context_frames": 160,
-      "context_stride": 4,
-      "context_overlap": 100,
-      "freenoise": true,
-      "verbose": true,
-      "fuse_method": "linear",
-      "reference_latent": [
-        "400",
+      "unet_name": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf",
+      "device": "cuda:0",
+      "virtual_vram_gb": 24,
+      "use_other_vram": false,
+      "expert_mode_allocations": ""
+    },
+    "class_type": "UnetLoaderGGUFDisTorchMultiGPU",
+    "_meta": {
+      "title": "UnetLoaderGGUFDisTorchMultiGPU"
+    }
+  },
+  "107": {
+    "inputs": {
+      "lora_name": "split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
+      "strength_model": 0.8,
+      "model": [
+        "106",
         0
       ]
     },
-    "class_type": "WanVideoContextOptions",
+    "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "WanVideo Context Options"
+      "title": "LoraLoaderModelOnly"
     }
   },
-  "404": {
+  "108": {
     "inputs": {
-      "vae_name": "wan_2.1_vae.safetensors"
-    },
-    "class_type": "VAELoader",
-    "_meta": {
-      "title": "Load VAE"
-    }
-  },
-  "309:300": {
-    "inputs": {
-      "lora": "sh4rpn3ss_v2_e56.safetensors",
-      "strength": 0.7,
-      "low_mem_load": false,
-      "merge_loras": false,
-      "prev_lora": [
-        "309:299",
+      "backend": "inductor",
+      "fullgraph": false,
+      "mode": "max-autotune-no-cudagraphs",
+      "dynamic": false,
+      "compile_transformer_blocks_only": true,
+      "dynamo_cache_size_limit": 64,
+      "model": [
+        "111",
         0
       ]
     },
-    "class_type": "WanVideoLoraSelect",
+    "class_type": "TorchCompileModelWanVideoV2",
     "_meta": {
-      "title": "WanVideo Lora Select"
+      "title": "TorchCompileModelWanVideoV2"
     }
   },
-  "309:299": {
+  "109": {
     "inputs": {
-      "lora": "OFA1M1-clothed-e09.safetensors",
-      "strength": 0.95,
-      "low_mem_load": false,
-      "merge_loras": false,
-      "prev_lora": [
-        "309:298",
+      "nag_scale": 5,
+      "nag_tau": 2,
+      "nag_alpha": 0.25,
+      "nag_sigma_end": 0
+    },
+    "class_type": "NAGParamtersSetting",
+    "_meta": {
+      "title": "NAG Paramters Setting"
+    }
+  },
+  "111": {
+    "inputs": {
+      "lora_name": "xxta-maya-clothed-000132.safetensors",
+      "strength_model": 1,
+      "model": [
+        "107",
         0
       ]
     },
-    "class_type": "WanVideoLoraSelect",
+    "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "WanVideo Lora Select"
+      "title": "LoraLoaderModelOnly"
     }
   },
-  "309:298": {
+  "112": {
     "inputs": {
-      "lora": "wan2.2_low_t2v.safetensors",
-      "strength": 0.8,
-      "low_mem_load": false,
-      "merge_loras": false
+      "width": [
+        "90",
+        0
+      ],
+      "height": [
+        "91",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "stretch",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "24",
+        0
+      ]
     },
-    "class_type": "WanVideoLoraSelect",
+    "class_type": "ImageResizeKJv2",
     "_meta": {
-      "title": "WanVideo Lora Select"
+      "title": "Resize Image v2"
+    }
+  },
+  "113": {
+    "inputs": {
+      "model": "u2net: general purpose",
+      "providers": "CUDA"
+    },
+    "class_type": "RemBGSession+",
+    "_meta": {
+      "title": "🔧 RemBG Session"
+    }
+  },
+  "114": {
+    "inputs": {
+      "rembg_session": [
+        "113",
+        0
+      ],
+      "image": [
+        "115",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "115": {
+    "inputs": {
+      "width": [
+        "90",
+        0
+      ],
+      "height": [
+        "91",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "stretch",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "17",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "116": {
+    "inputs": {
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": [
+        "90",
+        0
+      ],
+      "bbox_detector": "yolo_nas_l_fp16.onnx",
+      "pose_estimator": "dw-ll_ucoco_384_bs5.torchscript.pt",
+      "scale_stick_for_xinsr_cn": "disable",
+      "image": [
+        "114",
+        0
+      ]
+    },
+    "class_type": "DWPreprocessor",
+    "_meta": {
+      "title": "DWPose Estimator"
+    }
+  },
+  "117": {
+    "inputs": {
+      "mode": "subtract",
+      "foreground_opacity": 1,
+      "foreground_scale": 1,
+      "position_x": 50,
+      "position_y": 50,
+      "foreground": [
+        "80",
+        0
+      ],
+      "background": [
+        "116",
+        0
+      ]
+    },
+    "class_type": "AILab_ImageCombiner",
+    "_meta": {
+      "title": "Image Combiner (RMBG) 🖼️"
+    }
+  },
+  "118": {
+    "inputs": {
+      "width_upscale": [
+        "90",
+        0
+      ],
+      "height_upscale": [
+        "91",
+        0
+      ],
+      "presets": "'三' for long narrow screen"
+    },
+    "class_type": "CustomCropArea",
+    "_meta": {
+      "title": "Custom Crop Area"
+    }
+  },
+  "120": {
+    "inputs": {
+      "mode": "always",
+      "volume": 1,
+      "file": "notify.mp3",
+      "any": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "PlaySound|pysssss",
+    "_meta": {
+      "title": "PlaySound 🐍"
+    }
+  },
+  "121": {
+    "inputs": {
+      "rel_l1_thresh": 0.15,
+      "start_percent": 0.1,
+      "end_percent": 1,
+      "cache_device": "main_device",
+      "coefficients": "14B",
+      "model": [
+        "108",
+        0
+      ]
+    },
+    "class_type": "WanVideoTeaCacheKJ",
+    "_meta": {
+      "title": "WanVideo Tea Cache (native)"
     }
   }
 }

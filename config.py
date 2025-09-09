@@ -39,7 +39,7 @@ GCS_BUCKET_PATH = "gs://aiof-saved-files/"
 
 # VIDEO
 FRAMES_TO_RENDER = 161  # Constant frames per chunk
-STEPS = 8
+STEPS = 4
 VIDEO_WIDTH = 720
 VIDEO_HEIGHT = 1280
 CONTEXT_OPTIONS_FRAMES = 220
@@ -47,15 +47,15 @@ CONTEXT_OPTIONS_OVERLAP = 100
 
 
 # Node IDs for workflow modification
-NODE_WIDTH = "21"
-NODE_HEIGHT = "20"
-NODE_REF_IMAGES = "392"
-NODE_SAMPLES_54 = "54"
-NODE_FRAMES_VALUE = "19"
+NODE_WIDTH = "90"
+NODE_HEIGHT = "91"
+NODE_REF_IMAGES = "24"
+NODE_SAMPLES_54 = "104"
 NODE_START_FRAME = "348"
-NODE_VIDEO_COMBINE = "340"
-NODE_PROMPT = "53"
-NODE_LOAD_VIDEO_PATH = "389"
+NODE_VIDEO_COMBINE = "38"
+NODE_PROMPT_POS = "6"
+NODE_PROMPT_NEG = "7"
+NODE_LOAD_VIDEO_PATH = "17"
 NODE_CONTEXT_OPTIONS = "401"
 
 # Retry Configuration
@@ -65,9 +65,9 @@ RETRY_DELAY = 5  # seconds
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
 
-I2I_CFG_VALUES = [ 2.0, 2.5, 3.0, 3.5, 4.0]
+I2I_CFG_VALUES = [ 2.5, 3.25, 4.0]
 
-I2I_IMAGE_RENDER_AMOUNT = 4  # Number of renders per CFG value
+I2I_IMAGE_RENDER_AMOUNT = 2  # Number of renders per CFG value
 I2I_SUPPORTED_IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
 I2I_EXCLUDED_FOLDERS = {'_old'}  # Folders to exclude from scanning
 I2I_PROCESSED_FILE = "i2i_processed_images.txt"  # File to track processed images

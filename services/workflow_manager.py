@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 from models.job import RenderJob
 from config import (
-    CONTEXT_OPTIONS_FRAMES, CONTEXT_OPTIONS_OVERLAP, NODE_CONTEXT_OPTIONS, NODE_HEIGHT, NODE_LOAD_VIDEO_PATH, NODE_REF_IMAGES, NODE_SAMPLES_54, NODE_FRAMES_VALUE, NODE_VIDEO_COMBINE, 
+    CONTEXT_OPTIONS_FRAMES, CONTEXT_OPTIONS_OVERLAP, NODE_CONTEXT_OPTIONS, NODE_HEIGHT, NODE_LOAD_VIDEO_PATH, NODE_PROMPT_NEG, NODE_PROMPT_POS, NODE_REF_IMAGES, NODE_SAMPLES_54, NODE_FRAMES_VALUE, NODE_VIDEO_COMBINE, 
     NODE_START_FRAME, NODE_PROMPT, NODE_WIDTH, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH
 )
 from services.storage_utils import StorageManager
@@ -52,8 +52,8 @@ class WorkflowManager:
         """
         workflow = copy.deepcopy(self.base_workflow)
                       
-        workflow[NODE_FRAMES_VALUE]["inputs"]["value"] = job.frames_to_render
-        workflow[NODE_START_FRAME]["inputs"]["value"] = job.start_frame
+        workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["frame_load_cap"] = job.frames_to_render
+        workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["skip_first_frames"] = job.start_frame
         
         workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["video"] = job.video_input_path
         workflow[NODE_REF_IMAGES]["inputs"]["image"] = job.reference_image_path
@@ -62,27 +62,12 @@ class WorkflowManager:
         workflow[NODE_HEIGHT]["inputs"]["value"] = VIDEO_HEIGHT
         
         workflow[NODE_SAMPLES_54]["inputs"]["seed"] = job.seed
-        workflow[NODE_SAMPLES_54]["inputs"]["start_step"] = 0
-        workflow[NODE_SAMPLES_54]["inputs"]["end_step"] = -1
         workflow[NODE_SAMPLES_54]["inputs"]["steps"] = STEPS
                     
         workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
 
-        workflow[NODE_PROMPT]["inputs"]["positive_prompt"] = job.positive_prompt
-        workflow[NODE_PROMPT]["inputs"]["negative_prompt"] = job.negative_prompt
-
-        context_options_frames = CONTEXT_OPTIONS_FRAMES
-        context_options_overlap = CONTEXT_OPTIONS_OVERLAP
-        
-        if job.frames_to_render <= CONTEXT_OPTIONS_FRAMES:
-            context_options_frames = job.frames_to_render
-        
-        if context_options_frames <= context_options_overlap:
-            context_options_overlap = context_options_frames-1
-        
-        workflow[NODE_CONTEXT_OPTIONS]["inputs"]["context_frames"] = context_options_frames
-        workflow[NODE_CONTEXT_OPTIONS]["inputs"]["context_overlap"] = min(context_options_overlap, CONTEXT_OPTIONS_OVERLAP)
-
+        workflow[NODE_PROMPT_POS]["inputs"]["text"] = job.positive_prompt
+        workflow[NODE_PROMPT_NEG]["inputs"]["text"] = job.negative_prompt
         
         self.storage.save_runtime_workflow(workflow, job.prompt_name, job.job_number, "render")
         logger.info(f"Modified workflow for job #{job.job_number}")
