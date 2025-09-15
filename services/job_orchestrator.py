@@ -30,13 +30,14 @@ class JobOrchestrator:
         self.completed_jobs = []
         self.failed_jobs = []
     
-    def execute_full_pipeline(self, prompt_data: PromptData, promptName: str, resume_from_state: Optional[str] = None) -> bool:
+    def execute_full_pipeline(self, prompt_data: PromptData, promptName: str, resume_from_state: Optional[str] = None, dry_run: bool = False) -> bool:
         """Execute the complete rendering pipeline for a prompt
         
         Args:
             prompt_data: The prompt data to process
             promptName: Name/identifier for organizing this prompt's files
             resume_from_state: Optional state file to resume from
+            dry_run: If True, skip ComfyUI execution and only generate workflows
             
         Returns:
             True if successful, False otherwise
@@ -47,10 +48,11 @@ class JobOrchestrator:
             self.completed_jobs = []
             self.failed_jobs = []
 
-            # Connect to ComfyUI
-            if not self.comfyui_client.connect():
-                logger.error("Failed to connect to ComfyUI")
-                return False
+            # Connect to ComfyUI unless dry-run
+            if not dry_run:
+                if not self.comfyui_client.connect():
+                    logger.error("Failed to connect to ComfyUI")
+                    return False
                         
             # Ensure prompt directories exist
             self.storage.ensure_directories(promptName)
@@ -60,6 +62,14 @@ class JobOrchestrator:
             
             # Plan jobs
             render_jobs = job_planner.calculate_job_sequence(prompt_data)
+            # DRY RUN: Only generate and save workflows
+            if dry_run:
+                logger.info("DRY RUN: Generating workflows only; no ComfyUI connection or execution")
+                for job in render_jobs:
+                    self.workflow_manager.modify_workflow_for_job(job)
+                    logger.info(f"DRY RUN: Saved workflow for job {job.job_number}")
+                logger.info("DRY RUN: Completed workflow generation")
+                return True
                         
             # Execute render jobs
             logger.info("=" * 60)
@@ -84,6 +94,15 @@ class JobOrchestrator:
             #     return False
                                     
             logger.info(f"✅ Successfully completed pipeline for {prompt_data.video_name}")
+
+            # Collect outputs for the last render (optional)
+            try:
+                if render_results:
+                    # get history of the last prompt
+                    # Note: execute_single_render_job currently does not return prompt_id; we could extend it
+                    pass
+            except Exception:
+                pass
             return True
                         
         except Exception as e:

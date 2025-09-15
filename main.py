@@ -5,9 +5,11 @@ Video generation system using ComfyUI workflows
 """
 
 import argparse
+import json
 import logging
 import sys
 import uuid
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -19,6 +21,7 @@ from models.prompt_data import PromptData
 from services.job_orchestrator import JobOrchestrator
 from services.service_factory import ServiceFactory
 from services.i2i_orchestrator import I2IOrchestrator
+from services.trello_client import TrelloApiClient
 from utils.file_parser import PromptFileParser
 from utils.job_planner import JobPlanner
 
@@ -123,13 +126,28 @@ def parse_arguments():
         action="store_true",
         help="Show detailed output from all operations"
     )
+
+    # Dry run (no ComfyUI execution)
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Do not connect to ComfyUI; only generate and save workflows"
+    )
+
+    # Trello helper
+    parser.add_argument(
+        "--trello",
+        action="store_true",
+        help="Call POST /api/trello/getNextCard on the configured Trello API base URL and print the result"
+    )
     
     args = parser.parse_args()
     
-    # Validate arguments based on mode
+    # Set defaults/validate based on mode
     if args.mode == "v2v":
         if not args.prompt_file and not args.prompt_dir:
-            parser.error("Either prompt_file or --prompt-dir must be provided for v2v mode")
+            # Default to configured directory when nothing provided
+            args.prompt_dir = config.INPUT_PROMPT_DIR
     # i2i mode doesn't require prompt files
     
     return args
@@ -156,7 +174,8 @@ def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> boo
         success = orchestrator.execute_full_pipeline(
             prompt_data=prompt_data,
             promptName=promptName,
-            resume_from_state=args.resume
+            resume_from_state=args.resume,
+            dry_run=getattr(args, "dry_run", False)
         )
         
         if success:
@@ -180,7 +199,7 @@ def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> boo
         return False
 
 
-def run_i2i_mode(args) -> int:
+def run_i2i_mode(args, card) -> int:
     """Run the i2i image processing mode
     
     Args:
@@ -196,8 +215,8 @@ def run_i2i_mode(args) -> int:
     logger.info("=" * 80)
     
     try:
-                # Create and run i2i orchestrator
-        orchestrator = I2IOrchestrator()
+        # Create and run i2i orchestrator
+        orchestrator = I2IOrchestrator(card)
         
         # Display configuration
         status = orchestrator.get_status()
@@ -210,6 +229,7 @@ def run_i2i_mode(args) -> int:
         
         # Final status
         final_status = orchestrator.get_status()
+        
         logger.info("=" * 80)
         logger.info("I2I Processing Complete")
         logger.info(f"Processed: {final_status['processed']} images")
@@ -223,7 +243,106 @@ def run_i2i_mode(args) -> int:
         logger.error(f"Error in i2i mode: {e}", exc_info=True)
         return 1
 
+def process_prompt_directory_trello(args) -> int:
+    logger = logging.getLogger(__name__)
 
+    client = TrelloApiClient(config.TRELLO_API_BASE_URL)
+    # Poll up to 10 minutes for next card
+    poll_seconds = 10 * 60
+    interval_seconds = 15
+    deadline = time.time() + poll_seconds
+    card = None
+    while time.time() < deadline:
+        try:
+            card = client.get_next_card()
+        except Exception as e:
+            logger.warning(f"Error fetching next Trello card: {e}")
+            card = None
+        if card:
+            break
+        remaining = int(deadline - time.time())
+        logger.info(f"No next Trello card yet. Polling again in {interval_seconds}s (remaining ~{remaining}s)")
+        time.sleep(interval_seconds)
+    
+    if not card:
+        logger.info("No next Trello card after 10 minutes. Initiating shutdown.")
+        if not getattr(args, "dry_run", False):
+            try:
+                runpod = ServiceFactory.create_runpod_manager()
+                runpod.shutdown_current_pod()
+            except Exception as e:
+                logger.warning(f"Could not shutdown RunPod: {e}")
+        return 0
+
+    if args.mode == "i2i":
+        # Run i2i and then report the generated output link (GCS only)
+        try:
+            orchestrator = I2IOrchestrator(card)
+            orchestrator.run(continuous=args.continuous)
+            links = orchestrator.get_last_output_links()
+            gcs_link = links.get("gcs_path") or ""
+            # Convert gs://bucket/path -> https://storage.googleapis.com/bucket/path
+            if gcs_link.startswith("gs://"):
+                https_link = "https://storage.googleapis.com/" + gcs_link[len("gs://"):]
+            else:
+                https_link = gcs_link
+            # Prefix with '@' as required by consumer
+            prefixed_link = ("@" + https_link) if https_link else ""
+            result_payload = {
+                "videoName": card.get("cardId"),
+                "outputPath": prefixed_link,
+            }
+            TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
+                card_id=card.get("cardId"),
+                result=result_payload,
+            )
+        except Exception as e:
+            logger.warning(f"Could not report i2i output link: {e}")
+        return 0
+        
+    # V2V FLOW
+    prompt_data = PromptData(
+        video_name=card.get("cardId"),
+        start_frame=int(card.get("startFrame") or 0),
+        total_frames=int(card.get("totalFrames") or 0),
+        positive_prompt=card.get("description", ""),
+        negative_prompt=card.get("negativePrompt", ""),
+        source_file="trello"
+    )
+    prompt_data.validate()
+
+    promptName = prompt_data.video_name
+    # Plan + run
+    job_planner = JobPlanner(promptName)
+    render_jobs = job_planner.calculate_job_sequence(prompt_data, card.get("imageReference"), card.get("videoSource"))
+
+    # Override the derived paths with URLs (if ComfyUI accepts URLs)
+    for job in render_jobs:
+        if card.get("videoSource"):
+            job.video_input_path = card["videoSource"]
+        if card.get("imageReference"):
+            job.reference_image_path = card["imageReference"]
+
+    logger.info(f"Planned {len(render_jobs)} render job(s)")
+    ok = process_single_prompt(prompt_data, promptName, args)
+    
+    if ok:
+        try:
+            result_payload = {
+                "videoName": promptName,
+                "outputPath": str(render_jobs[0].video_output_full_path),
+                "totalFrames": prompt_data.total_frames,
+            }
+            TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
+                card_id=card.get("cardId", promptName),
+                result=result_payload,
+            )
+            logger.info("Reported completion to Trello API: completedCard")
+        except Exception as e:
+            logger.error(f"Failed to report completion to Trello API: {e}")
+    
+    return 0 if ok else 1
+    
 def process_prompt_directory(prompt_dir: Path, args) -> int:
     """Process all prompt files in a directory
     
@@ -300,6 +419,10 @@ def main():
     logger.info(f"Mode: {args.mode.upper()}")
     
     try:
+        # Use Trello route-based input if requested
+        if args.trello:
+            return process_prompt_directory_trello(args)
+
         # Route based on mode
         if args.mode == "i2i":
             # Run i2i mode
@@ -328,8 +451,10 @@ def main():
                 return 1
             
             # Parse the prompt file
-            parser = PromptFileParser(str(prompt_file))
-            prompt_data = parser.parse()
+            prompt_data = PromptFileParser.parse_prompt_file(prompt_file)
+            if prompt_data is None:
+                logger.error("Failed to parse prompt file")
+                return 1
             
             # Generate promptName from filename
             promptName = prompt_file.stem
@@ -339,9 +464,9 @@ def main():
             
             # Calculate job sequence for preview
             job_planner = JobPlanner(promptName)
-            render_jobs, combine_jobs = job_planner.calculate_job_sequence(prompt_data)
+            render_jobs = job_planner.calculate_job_sequence(prompt_data)
             
-            logger.info(f"Will create {len(render_jobs)} render jobs and {len(combine_jobs)} combine jobs")
+            logger.info(f"Will create {len(render_jobs)} render job(s)")
             
             # Process the prompt
             if not process_single_prompt(prompt_data, promptName, args):

@@ -2,7 +2,9 @@
 import time
 import logging
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
+import requests
+from urllib.parse import urlparse, unquote
 
 from models.i2i_job import I2IJob
 from services.image_scanner import ImageScanner
@@ -11,7 +13,7 @@ from services.i2i_workflow_manager import I2IWorkflowManager
 from config import (
     I2I_CFG_VALUES, I2I_IMAGE_RENDER_AMOUNT, I2I_PROCESSED_FILE, 
     I2I_FAILED_FILE, I2I_POLL_INTERVAL, I2I_INPUT_DIR,
-    I2I_WORKFLOW_FILE, SERVER_ADDRESS
+    I2I_WORKFLOW_FILE, SERVER_ADDRESS, GCS_BUCKET_PATH
 )
 from services.service_factory import ServiceFactory
 
@@ -21,9 +23,18 @@ logger = logging.getLogger(__name__)
 class I2IOrchestrator:
     """Orchestrates the i2i rendering workflow"""
     
-    def __init__(self):
+    def __init__(self, card):
         self.comfyui_client = ServiceFactory.create_comfyui_client(SERVER_ADDRESS)
         self.storage = ServiceFactory.create_storage_manager()
+        self.card = card
+        self.last_output_view_url: Optional[str] = None
+        self.last_output_gcs_path: Optional[str] = None
+
+        img_url = card.get("imageReference")
+        if img_url:
+            name = Path(unquote(urlparse(img_url).path)).name or "input.png"
+            out_path = Path(I2I_INPUT_DIR) / name
+            self._download_file(img_url, out_path)
         
         # Initialize components
         self.scanner = ImageScanner(I2I_INPUT_DIR)
@@ -41,6 +52,17 @@ class I2IOrchestrator:
         logger.info(f"CFG values: {I2I_CFG_VALUES}")
         logger.info(f"Renders per CFG: {I2I_IMAGE_RENDER_AMOUNT}")
         logger.info(f"Total renders per image: {len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT}")
+
+    def _download_file(self, url: str, out_path) -> str:
+        out_path = Path(out_path)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        with requests.get(url, stream=True, timeout=60) as r:
+            r.raise_for_status()
+            with open(out_path, "wb") as f:
+                for chunk in r.iter_content(1024 * 1024):
+                    if chunk:
+                        f.write(chunk)
+        return str(out_path.resolve())
     
     def run(self, continuous: bool = True):
         """Run the i2i orchestrator"""
@@ -139,18 +161,46 @@ class I2IOrchestrator:
             logger.info(f"    Queued prompt: {prompt_id}")
             
             # Wait for completion
-            success = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=300)
-            
+            success, _err = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=300)
+
             if success:
                 logger.info(f"    ✓ Completed: {job.output_filename}")
             else:
                 logger.error(f"    ✗ Timeout or error: {job.output_filename}")
             
+            if success:
+                # Fetch outputs and upload last image to GCS folder 'trello-output'
+                outputs = self.comfyui_client.get_prompt_outputs(prompt_id)
+                if outputs:
+                    last = outputs[-1]
+                    view_url = last.get('url')
+                    if view_url:
+                        self.last_output_view_url = view_url
+                        logger.info(f"    Output: {view_url}")
+                    # Try to download the last image to a temp file and upload to GCS
+                    try:
+                        if view_url:
+                            tmp_path = Path('output') / 'prompt-runner' / 'temp' / last.get('filename', 'output.png')
+                            tmp_path.parent.mkdir(parents=True, exist_ok=True)
+                            import urllib.request as _urlreq
+                            _urlreq.urlretrieve(view_url, str(tmp_path))
+                            from services.storage_utils import StorageManager
+                            storage = StorageManager()
+                            gcs_path = f"{GCS_BUCKET_PATH}trello-output/{tmp_path.name}"
+                            if storage.upload_file_to_gcs(str(tmp_path), gcs_path):
+                                self.last_output_gcs_path = gcs_path
+                    except Exception as e:
+                        logger.warning(f"    Could not upload output to GCS: {e}")
             return success
-            
         except Exception as e:
             logger.error(f"Error executing job {job.job_id}: {e}")
             return False
+
+    def get_last_output_links(self) -> Dict[str, Optional[str]]:
+        return {
+            "view_url": self.last_output_view_url,
+            "gcs_path": self.last_output_gcs_path,
+        }
     
     def get_status(self) -> dict:
         """Get current orchestrator status"""
