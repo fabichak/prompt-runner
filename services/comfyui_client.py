@@ -6,7 +6,7 @@ import urllib.request
 import urllib.parse
 import uuid
 import time
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 import logging
 
 from config import SERVER_ADDRESS, MAX_RETRIES, RETRY_DELAY
@@ -126,6 +126,39 @@ class ComfyUIClient:
         except Exception as e:
             logger.error(f"Error getting history for {prompt_id}: {e}")
             return None
+
+    def get_prompt_outputs(self, prompt_id: str) -> List[Dict[str, str]]:
+        """Return list of output files for a completed prompt as URLs and metadata
+
+        Each item: { filename, subfolder, type, url }
+        """
+        outputs: List[Dict[str, str]] = []
+        history = self.get_history(prompt_id)
+        if not history:
+            return outputs
+
+        try:
+            items = history.get("outputs", {})
+            for _node, data in items.items():
+                images = data.get("images") or []
+                for img in images:
+                    filename = img.get("filename", "")
+                    subfolder = img.get("subfolder", "")
+                    ftype = img.get("type", "output")
+                    # Build a direct view URL
+                    q_fn = urllib.parse.quote(filename)
+                    q_sf = urllib.parse.quote(subfolder)
+                    q_tp = urllib.parse.quote(ftype)
+                    url = f"http://{self.server_address}/view?filename={q_fn}&subfolder={q_sf}&type={q_tp}"
+                    outputs.append({
+                        "filename": filename,
+                        "subfolder": subfolder,
+                        "type": ftype,
+                        "url": url,
+                    })
+        except Exception as e:
+            logger.error(f"Error parsing outputs for {prompt_id}: {e}")
+        return outputs
     
     def interrupt_execution(self):
         """Interrupt current execution"""
