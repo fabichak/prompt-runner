@@ -61,7 +61,7 @@ class StorageManager:
         dir_path = self.get_directory(promptName, "workflows")
         filepath = dir_path / filename
         with open(filepath, 'w') as f:
-            json.dump(workflow, f, indent=2, default=str)
+            json.dump(workflow, f, indent=2, default=str, ensure_ascii=False)
         return str(filepath)
         
     def cleanup_intermediate_files(self, promptName: str, keep_final: bool = True):
@@ -120,6 +120,34 @@ class StorageManager:
             logger.error(f"Error in zip and upload: {e}")
             return False
     
+    def upload_file_to_gcs(self, local_path: str, gcs_dest_path: str) -> bool:
+        """Upload a single file to a GCS destination path using gsutil.
+
+        Args:
+            local_path: Path to local file to upload
+            gcs_dest_path: Full GCS destination (e.g. gs://bucket/folder/file.png)
+        """
+        try:
+            local = Path(local_path)
+            if not local.exists() or not local.is_file():
+                logger.error(f"Local file not found for upload: {local}")
+                return False
+
+            cmd = ["gsutil", "cp", str(local), gcs_dest_path]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                logger.info(f"Uploaded file to {gcs_dest_path}")
+                return True
+            else:
+                logger.error(f"GCS upload failed: {result.stderr}")
+                return False
+        except FileNotFoundError:
+            logger.error("gsutil not found. Install the Google Cloud SDK and run `gcloud init`.")
+            return False
+        except Exception as e:
+            logger.error(f"Error uploading file to GCS: {e}")
+            return False
+
     def get_disk_usage(self, promptName: str) -> Dict[str, float]:
         """Get disk usage statistics in GB for a specific prompt"""
         stats = {}
