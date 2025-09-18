@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 # Server Configuration
-SERVER_ADDRESS = "172.26.144.1:8188"
+SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = None  # Will be set at runtime
 
 # Workflow Files
@@ -64,9 +64,9 @@ RETRY_DELAY = 5  # seconds
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
 
-I2I_CFG_VALUES = [ 2.5, 3.25, 4.0]
+I2I_CFG_VALUES = [2.5]
 
-I2I_IMAGE_RENDER_AMOUNT = 2  # Number of renders per CFG value
+I2I_IMAGE_RENDER_AMOUNT = 1  # Number of renders per CFG value
 I2I_SUPPORTED_IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
 I2I_EXCLUDED_FOLDERS = {'_old'}  # Folders to exclude from scanning
 I2I_PROCESSED_FILE = "i2i_processed_images.txt"  # File to track processed images
@@ -76,3 +76,8 @@ I2I_POLL_INTERVAL = 30  # Seconds between folder scans for new images
 I2I_NODE_IMAGE_PATH = "365"
 I2I_NODE_OUTPUT = "53"
 I2I_SAMPLER_NODE = "334" 
+
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+
+# External API Endpoints
+TRELLO_API_BASE_URL = "https://xxtria-76618010335.us-central1.run.app"

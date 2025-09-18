@@ -89,6 +89,8 @@ class I2IOrchestrator:
                         self.process_image(image_path, cfg)
                 else:
                     logger.info("No new images to process")
+                    if not continuous:
+                        return "No new images to create"
                 
                 if not continuous:
                     logger.info("Single run mode - exiting")

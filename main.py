@@ -214,8 +214,7 @@ def process_all_prompt_directories_trello(args) -> int:
         if not card:
             logger.info("No more Trello cards to process.")
             break
-
-        logger.info(f"Processing card {card.get('cardId')}")
+        logger.info(f"Processing card {card.get('cardName')}")
         exit_code = process_prompt_directory_trello(args, card)
 
         if exit_code != 0 and not getattr(args, "continue_on_error", False):
@@ -237,7 +236,7 @@ def process_prompt_directory_trello(args, card) -> int:
             logger.info(f"Renders per CFG: {status.get('renders_per_cfg')}")
             logger.info(f"Continuous mode: {getattr(args, 'continuous', False)}")
 
-            orchestrator.run(continuous=args.continuous, cfg=card.get("cfg"))
+            response =orchestrator.run(continuous=args.continuous, cfg=card.get("cfg"))
 
             final_status = orchestrator.get_status(card.get("cfg"))
             logger.info("=" * 80)
@@ -256,7 +255,7 @@ def process_prompt_directory_trello(args, card) -> int:
             else:
                 https_link = gcs_link
 
-            result_payload = https_link
+            result_payload = https_link or response
 
             # Clean up transient artifacts
             try:
@@ -276,7 +275,7 @@ def process_prompt_directory_trello(args, card) -> int:
     # --- V2V FLOW (Video) ---
     try:
         prompt_data = PromptData(
-            video_name=card.get("cardId"),
+            video_name=card.get("cardName"),
             start_frame=int(card.get("startFrame") or 0),
             total_frames=int(card.get("totalFrames") or 0),
             positive_prompt=card.get("description", ""),
@@ -327,7 +326,7 @@ def process_prompt_directory_trello(args, card) -> int:
             return 1
 
     except Exception as e:
-        logger.exception(f"Error during V2V processing for card {card.get('cardId')}: {e}")
+        logger.exception(f"Error during V2V processing for card {card.get('cardName')}: {e}")
         # Attempt cleanup even on failure
         try:
             StorageManager().cleanup_temp_folder()
