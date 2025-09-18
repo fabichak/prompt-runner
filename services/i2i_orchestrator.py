@@ -45,13 +45,13 @@ class I2IOrchestrator:
         )
         
         # Validate CFG values are configured
-        if not I2I_CFG_VALUES:
-            raise ValueError("I2I_CFG_VALUES is empty. Please configure CFG values in config.py")
+        # if not I2I_CFG_VALUES:
+        #     raise ValueError("I2I_CFG_VALUES is empty. Please configure CFG values in config.py")
         
-        logger.info(f"I2I Orchestrator initialized")
-        logger.info(f"CFG values: {I2I_CFG_VALUES}")
-        logger.info(f"Renders per CFG: {I2I_IMAGE_RENDER_AMOUNT}")
-        logger.info(f"Total renders per image: {len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT}")
+        # logger.info(f"I2I Orchestrator initialized")
+        # logger.info(f"CFG values: {I2I_CFG_VALUES}")
+        # logger.info(f"Renders per CFG: {I2I_IMAGE_RENDER_AMOUNT}")
+        # logger.info(f"Total renders per image: {len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT}")
 
     def _download_file(self, url: str, out_path) -> str:
         out_path = Path(out_path)
@@ -64,7 +64,7 @@ class I2IOrchestrator:
                         f.write(chunk)
         return str(out_path.resolve())
     
-    def run(self, continuous: bool = True):
+    def run(self, continuous: bool = True, cfg: int = None):
         """Run the i2i orchestrator"""
         logger.info("Starting I2I Orchestrator...")
         
@@ -86,7 +86,7 @@ class I2IOrchestrator:
                 if new_images:
                     logger.info(f"Processing {len(new_images)} new images")
                     for image_path in new_images:
-                        self.process_image(image_path)
+                        self.process_image(image_path, cfg)
                 else:
                     logger.info("No new images to process")
                 
@@ -103,44 +103,43 @@ class I2IOrchestrator:
             logger.error(f"Error in I2I Orchestrator: {e}")
             raise
     
-    def process_image(self, image_path: Path):
+    def process_image(self, image_path: Path, cfg: int):
         """Process a single image with all CFG values and render amounts"""
         logger.info(f"Processing image: {image_path.name}")
         
         try:
             image_processed = False
-            total_renders = len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT
+            total_renders = cfg * I2I_IMAGE_RENDER_AMOUNT
             current_render = 0
-            
-            for cfg_value in I2I_CFG_VALUES:
-                for render_num in range(1, I2I_IMAGE_RENDER_AMOUNT + 1):
-                    current_render += 1
-                    
-                    # Create output filename
-                    image_stem = image_path.stem
-                    output_filename = f"{image_stem}_cfg{cfg_value}_render{render_num}"
-                    
-                    # Create job
-                    job = I2IJob(
-                        image_path=str(image_path),
-                        cfg_value=cfg_value,
-                        render_number=render_num,
-                        output_filename=output_filename
-                    )
-                    
-                    logger.info(f"  Render {current_render}/{total_renders}: {job.job_id}")
-                    
-                    # Modify workflow
-                    workflow = self.workflow_manager.modify_workflow_for_i2i_job(job)
-                    
-                    # Queue and execute
-                    success = self._execute_job(workflow, job)
-                    
-                    if not success:
-                        logger.error(f"  Failed to execute job: {job.job_id}")
-                        # Mark as failed and stop processing this image
-                        self.tracker.mark_failed(str(image_path.absolute()))
-                        return
+
+            for render_num in range(1, I2I_IMAGE_RENDER_AMOUNT + 1):
+                current_render += 1
+                
+                # Create output filename
+                image_stem = image_path.stem
+                output_filename = f"{image_stem}_cfg{cfg}_render{render_num}"
+                
+                # Create job
+                job = I2IJob(
+                    image_path=str(image_path),
+                    cfg_value=cfg,
+                    render_number=render_num,
+                    output_filename=output_filename
+                )
+                
+                logger.info(f"  Render {current_render}/{total_renders}: {job.job_id}")
+                
+                # Modify workflow
+                workflow = self.workflow_manager.modify_workflow_for_i2i_job(job)
+                
+                # Queue and execute
+                success = self._execute_job(workflow, job)
+                
+                if not success:
+                    logger.error(f"  Failed to execute job: {job.job_id}")
+                    # Mark as failed and stop processing this image
+                    self.tracker.mark_failed(str(image_path.absolute()))
+                    return
             
             # Mark as processed after all renders complete
             self.tracker.mark_processed(str(image_path.absolute()))
@@ -202,7 +201,7 @@ class I2IOrchestrator:
             "gcs_path": self.last_output_gcs_path,
         }
     
-    def get_status(self) -> dict:
+    def get_status(self, cfg: int) -> dict:
         """Get current orchestrator status"""
         stats = self.tracker.get_stats()
         all_images = self.scanner.scan_for_images()
@@ -213,6 +212,6 @@ class I2IOrchestrator:
             "failed": stats["failed"],
             "total_found": len(all_images),
             "pending": len(all_images) - stats["total"],
-            "cfg_values": I2I_CFG_VALUES,
+            "cfg_values": cfg,
             "renders_per_cfg": I2I_IMAGE_RENDER_AMOUNT
         }

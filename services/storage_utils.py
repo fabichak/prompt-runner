@@ -41,6 +41,9 @@ class StorageManager:
             subfolder = prompt_base / "videos"
         elif dir_type == "workflows":
             subfolder = prompt_base / "workflows"    
+        elif dir_type == "output":
+            # Prompt base directory (entire prompt folder)
+            subfolder = prompt_base
         else:
             raise ValueError(f"Unknown directory type: {dir_type}")
         
@@ -77,6 +80,17 @@ class StorageManager:
             if directory.exists():
                 shutil.rmtree(directory)
                 logger.info(f"Cleaned up {directory}")
+
+    def cleanup_temp_folder(self):
+        """Clean up global temp folder used for transient artifacts (e.g., i2i)."""
+        output_dir = Path('output') / 'prompt-runner'
+        i2i_dir = Path('i2i-files')
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+            logger.info(f"Cleaned up temp folder {output_dir}")
+        if i2i_dir.exists():
+            shutil.rmtree(i2i_dir)
+            logger.info(f"Cleaned up temp folder {i2i_dir}")
     
     def zip_and_upload_output(self, promptName: str) -> bool:
         """Zip the 'combined' folder contents and upload to GCS."""
