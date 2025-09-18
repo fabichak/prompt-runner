@@ -15,6 +15,7 @@ from datetime import datetime
 
 # Set up config before other imports
 import config
+from services.storage_utils import StorageManager
 config.CLIENT_ID = str(uuid.uuid4())
 
 from models.prompt_data import PromptData
@@ -198,207 +199,140 @@ def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> boo
         logger.error(f"Error processing prompt {promptName}: {e}", exc_info=True)
         return False
 
-
-def run_i2i_mode(args, card) -> int:
-    """Run the i2i image processing mode
-    
-    Args:
-        args: Command line arguments
-        
-    Returns:
-        0 for success, non-zero for failure
-    """
+def process_all_prompt_directories_trello(args) -> int:
     logger = logging.getLogger(__name__)
-    
-    logger.info("=" * 80)
-    logger.info("Starting I2I (Image-to-Image) Mode")
-    logger.info("=" * 80)
-    
-    try:
-        # Create and run i2i orchestrator
-        orchestrator = I2IOrchestrator(card)
-        
-        # Display configuration
-        status = orchestrator.get_status()
-        logger.info(f"CFG Values: {status['cfg_values']}")
-        logger.info(f"Renders per CFG: {status['renders_per_cfg']}")
-        logger.info(f"Continuous mode: {args.continuous}")
-        
-        # Run the orchestrator
-        orchestrator.run(continuous=args.continuous)
-        
-        # Final status
-        final_status = orchestrator.get_status()
-        
-        logger.info("=" * 80)
-        logger.info("I2I Processing Complete")
-        logger.info(f"Processed: {final_status['processed']} images")
-        logger.info(f"Failed: {final_status['failed']} images")
-        logger.info(f"Pending: {final_status['pending']} images")
-        logger.info("=" * 80)
-        
-        return 0
-        
-    except Exception as e:
-        logger.error(f"Error in i2i mode: {e}", exc_info=True)
-        return 1
-
-def process_prompt_directory_trello(args) -> int:
-    logger = logging.getLogger(__name__)
-
     client = TrelloApiClient(config.TRELLO_API_BASE_URL)
-    # Poll up to 10 minutes for next card
-    poll_seconds = 10 * 60
-    interval_seconds = 15
-    deadline = time.time() + poll_seconds
-    card = None
-    while time.time() < deadline:
+
+    while True:
+        card = None
         try:
             card = client.get_next_card()
         except Exception as e:
             logger.warning(f"Error fetching next Trello card: {e}")
             card = None
-        if card:
-            break
-        remaining = int(deadline - time.time())
-        logger.info(f"No next Trello card yet. Polling again in {interval_seconds}s (remaining ~{remaining}s)")
-        time.sleep(interval_seconds)
-    
-    if not card:
-        logger.info("No next Trello card after 10 minutes. Initiating shutdown.")
-        if not getattr(args, "dry_run", False):
-            try:
-                runpod = ServiceFactory.create_runpod_manager()
-                runpod.shutdown_current_pod()
-            except Exception as e:
-                logger.warning(f"Could not shutdown RunPod: {e}")
-        return 0
 
-    if args.mode == "i2i":
-        # Run i2i and then report the generated output link (GCS only)
+        if not card:
+            logger.info("No more Trello cards to process.")
+            break
+
+        logger.info(f"Processing card {card.get('cardId')}")
+        exit_code = process_prompt_directory_trello(args, card)
+
+        if exit_code != 0 and not getattr(args, "continue_on_error", False):
+            logger.warning("Stopping because of error in card processing.")
+            break
+    return 0
+
+
+def process_prompt_directory_trello(args, card) -> int:
+    logger = logging.getLogger(__name__)
+
+
+    # --- I2I FLOW (Image) ---
+    if card.get("responseType") == "Image":
         try:
             orchestrator = I2IOrchestrator(card)
-            orchestrator.run(continuous=args.continuous)
-            links = orchestrator.get_last_output_links()
+            status = orchestrator.get_status(card.get("cfg"))
+            logger.info(f"CFG Values: {status.get('cfg_values')}")
+            logger.info(f"Renders per CFG: {status.get('renders_per_cfg')}")
+            logger.info(f"Continuous mode: {getattr(args, 'continuous', False)}")
+
+            orchestrator.run(continuous=args.continuous, cfg=card.get("cfg"))
+
+            final_status = orchestrator.get_status(card.get("cfg"))
+            logger.info("=" * 80)
+            logger.info("I2I Processing Complete")
+            logger.info(f"Processed: {final_status.get('processed')} images")
+            logger.info(f"Failed: {final_status.get('failed')} images")
+            logger.info(f"Pending: {final_status.get('pending')} images")
+            logger.info("=" * 80)
+
+            links = orchestrator.get_last_output_links() or {}
             gcs_link = links.get("gcs_path") or ""
+
             # Convert gs://bucket/path -> https://storage.googleapis.com/bucket/path
             if gcs_link.startswith("gs://"):
                 https_link = "https://storage.googleapis.com/" + gcs_link[len("gs://"):]
             else:
                 https_link = gcs_link
-            # Prefix with '@' as required by consumer
-            prefixed_link = ("@" + https_link) if https_link else ""
-            result_payload = {
-                "videoName": card.get("cardId"),
-                "outputPath": prefixed_link,
-            }
+
+            result_payload = https_link
+
+            # Clean up transient artifacts
+            try:
+                StorageManager().cleanup_temp_folder()
+            except Exception:
+                pass
+
             TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
                 card_id=card.get("cardId"),
                 result=result_payload,
             )
+            return 0
         except Exception as e:
-            logger.warning(f"Could not report i2i output link: {e}")
-        return 0
-        
-    # V2V FLOW
-    prompt_data = PromptData(
-        video_name=card.get("cardId"),
-        start_frame=int(card.get("startFrame") or 0),
-        total_frames=int(card.get("totalFrames") or 0),
-        positive_prompt=card.get("description", ""),
-        negative_prompt=card.get("negativePrompt", ""),
-        source_file="trello"
-    )
-    prompt_data.validate()
+            logger.warning(f"Could not process/report i2i output link: {e}")
+            return 1
 
-    promptName = prompt_data.video_name
-    # Plan + run
-    job_planner = JobPlanner(promptName)
-    render_jobs = job_planner.calculate_job_sequence(prompt_data, card.get("imageReference"), card.get("videoSource"))
+    # --- V2V FLOW (Video) ---
+    try:
+        prompt_data = PromptData(
+            video_name=card.get("cardId"),
+            start_frame=int(card.get("startFrame") or 0),
+            total_frames=int(card.get("totalFrames") or 0),
+            positive_prompt=card.get("description", ""),
+            negative_prompt=card.get("negativePrompt", ""),
+            source_file="trello",
+        )
+        prompt_data.validate()
 
-    # Override the derived paths with URLs (if ComfyUI accepts URLs)
-    for job in render_jobs:
-        if card.get("videoSource"):
-            job.video_input_path = card["videoSource"]
-        if card.get("imageReference"):
-            job.reference_image_path = card["imageReference"]
+        promptName = prompt_data.video_name
 
-    logger.info(f"Planned {len(render_jobs)} render job(s)")
-    ok = process_single_prompt(prompt_data, promptName, args)
-    
-    if ok:
+        # Plan + run
+        job_planner = JobPlanner(promptName)
+        render_jobs = job_planner.calculate_job_sequence(
+            prompt_data,
+            card.get("imageReference"),
+            card.get("videoSource"),
+        )
+
+        # Override derived paths with URLs (if ComfyUI accepts URLs)
+        for job in render_jobs:
+            if card.get("videoSource"):
+                job.video_input_path = card["videoSource"]
+            if card.get("imageReference"):
+                job.reference_image_path = card["imageReference"]
+
+        logger.info(f"Planned {len(render_jobs)} render job(s)")
+        ok = process_single_prompt(prompt_data, promptName, args)
+
+        # Clean up transient artifacts
         try:
-            result_payload = {
-                "videoName": promptName,
-                "outputPath": str(render_jobs[0].video_output_full_path),
-                "totalFrames": prompt_data.total_frames,
-            }
-            TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
-                card_id=card.get("cardId", promptName),
-                result=result_payload,
-            )
-            logger.info("Reported completion to Trello API: completedCard")
-        except Exception as e:
-            logger.error(f"Failed to report completion to Trello API: {e}")
-    
-    return 0 if ok else 1
-    
-def process_prompt_directory(prompt_dir: Path, args) -> int:
-    """Process all prompt files in a directory
-    
-    Args:
-        prompt_dir: Directory containing prompt files
-        args: Command line arguments
-        
-    Returns:
-        Number of successfully processed prompts
-    """
-    logger = logging.getLogger(__name__)
-    
-    # Find all .txt files in directory
-    prompt_files = sorted(prompt_dir.glob("*.txt"))
-    
-    if not prompt_files:
-        logger.warning(f"No prompt files found in {prompt_dir}")
-        return 0
-    
-    logger.info(f"Found {len(prompt_files)} prompt files")
-    
-    # Apply start-at offset
-    if args.start_at > 0:
-        logger.info(f"Starting at prompt index {args.start_at}")
-        prompt_files = prompt_files[args.start_at:]
-    
-    successful = 0
-    failed = 0
-    
-    for idx, prompt_file in enumerate(prompt_files, start=args.start_at):
-        logger.info("=" * 80)
-        logger.info(f"Processing prompt {idx + 1}: {prompt_file.name}")
-        logger.info("=" * 80)
-        
-        try:
-            # Parse prompt file
-            prompt_data = PromptFileParser.parse_prompt_file(Path(prompt_file))
-            
-            # Generate promptName from filename
-            promptName = prompt_file.stem
-            
-            # Process the prompt
-            if process_single_prompt(prompt_data, promptName, args):
-                successful += 1
-            else:
-                failed += 1
-                
-        except Exception as e:
-            logger.error(f"Failed to process {prompt_file}: {e}")
-            failed += 1
-    
-    logger.info("=" * 80)
-    logger.info(f"Batch processing complete: {successful} successful, {failed} failed")
-    
-    return successful
+            StorageManager().cleanup_temp_folder()
+        except Exception:
+            pass
 
+        if ok:
+            try:
+                result_payload = str(render_jobs[0].video_output_full_path)
+                TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
+                    card_id=card.get("cardId", promptName),
+                    result=result_payload,
+                )
+                logger.info("Reported completion to Trello API: completedCard")
+            except Exception as e:
+                logger.error(f"Failed to report completion to Trello API: {e}")
+            return 0
+        else:
+            return 1
+
+    except Exception as e:
+        logger.exception(f"Error during V2V processing for card {card.get('cardId')}: {e}")
+        # Attempt cleanup even on failure
+        try:
+            StorageManager().cleanup_temp_folder()
+        except Exception:
+            pass
+        return 1
 
 def main():
     """Main entry point"""
@@ -421,27 +355,27 @@ def main():
     try:
         # Use Trello route-based input if requested
         if args.trello:
-            return process_prompt_directory_trello(args)
+            return process_all_prompt_directories_trello(args)
 
         # Route based on mode
-        if args.mode == "i2i":
-            # Run i2i mode
-            return run_i2i_mode(args)
+        # if args.mode == "i2i":
+        #     # Run i2i mode
+        #     return run_i2i_mode(args)
         
         # Otherwise run v2v mode
         # Process based on input mode
-        if args.prompt_dir:
-            # Batch processing mode
-            prompt_dir = Path(args.prompt_dir)
-            if not prompt_dir.exists():
-                logger.error(f"Directory not found: {prompt_dir}")
-                return 1
+        # if args.prompt_dir:
+        #     # Batch processing mode
+        #     prompt_dir = Path(args.prompt_dir)
+        #     if not prompt_dir.exists():
+        #         logger.error(f"Directory not found: {prompt_dir}")
+        #         return 1
             
-            successful = process_prompt_directory(prompt_dir, args)
+        #     successful = process_prompt_directory(prompt_dir, args)
             
-            if successful == 0:
-                logger.error("No prompts were successfully processed")
-                return 1
+        #     if successful == 0:
+        #         logger.error("No prompts were successfully processed")
+        #         return 1
                 
         else:
             # Single prompt mode
