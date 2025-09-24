@@ -203,6 +203,9 @@ def process_all_prompt_directories_trello(args) -> int:
     logger = logging.getLogger(__name__)
     client = TrelloApiClient(config.TRELLO_API_BASE_URL)
 
+    poll_interval = getattr(args, "poll_interval", 15)
+    max_poll_seconds = getattr(args, "max_poll_seconds", 600)  # 10 minutos
+
     while True:
         card = None
         try:
@@ -212,14 +215,30 @@ def process_all_prompt_directories_trello(args) -> int:
             card = None
 
         if not card:
-            logger.info("No more Trello cards to process.")
-            break
+            logger.info(
+                f"No more Trello cards to process. Polling for up to "
+                f"{max_poll_seconds}s (interval {poll_interval}s)..."
+            )
+            deadline = time.time() + max_poll_seconds
+
+            while time.time() < deadline and not card:
+                time.sleep(poll_interval)
+                try:
+                    card = client.get_next_card()
+                except Exception as e:
+                    logger.warning(f"Polling error on get_next_card: {e}")
+
+            if not card:
+                logger.info("No cards found during polling window. Stopping.")
+                break
+
         logger.info(f"Processing card {card.get('cardName')}")
         exit_code = process_prompt_directory_trello(args, card)
 
         if exit_code != 0 and not getattr(args, "continue_on_error", False):
             logger.warning("Stopping because of error in card processing.")
             break
+
     return 0
 
 
