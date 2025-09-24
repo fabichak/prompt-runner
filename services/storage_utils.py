@@ -64,13 +64,14 @@ class StorageManager:
         filename = f"{job_number:03d}_{job_type}.json"
         dir_path = self.get_directory(promptName, "workflows")
         filepath = dir_path / filename
-        logger.debug("saving runtime workflow: " + filepath)
+        logger.debug("saving runtime workflow: " + str(filepath.absolute))
         with open(filepath, 'w') as f:
             json.dump(workflow, f, indent=2, default=str, ensure_ascii=False)
         return str(filepath)
         
     def cleanup_intermediate_files(self, promptName: str, keep_final: bool = True):
         """Clean up intermediate files after successful completion"""
+        logger.debug("cleanup_intermediate_files")
         directories_to_clean = [
             self.get_directory(promptName, "latents"),
             self.get_directory(promptName, "videos"),
@@ -85,6 +86,7 @@ class StorageManager:
 
     def cleanup_temp_folder(self):
         """Clean up global temp folder used for transient artifacts (e.g., i2i)."""
+        logger.debug("cleanup_temp_folder")
         output_dir = Path('output') / 'prompt-runner'
         i2i_dir = Path('i2i-files')
         if output_dir.exists():
