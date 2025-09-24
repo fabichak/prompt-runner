@@ -57,6 +57,7 @@ class WorkflowManager:
         workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["video"] = job.video_input_path
         workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["frame_load_cap"] = job.frames_to_render
         workflow[NODE_LOAD_VIDEO_PATH]["inputs"]["skip_first_frames"] = job.start_frame
+        #workflow[NODE_SELECT_EVERY]["inputs"]["value"] = job.select_every_n_frames
         
         workflow[NODE_REF_IMAGES]["inputs"]["image"] = job.reference_image_path
         
@@ -65,8 +66,6 @@ class WorkflowManager:
         
         workflow[NODE_SAMPLER]["inputs"]["seed"] = job.seed
         workflow[NODE_SAMPLER]["inputs"]["steps"] = STEPS
-
-        workflow[NODE_SELECT_EVERY]["inputs"]["value"] = job.select_every_n_frames
                     
         workflow[NODE_VIDEO_COMBINE]["inputs"]["filename_prefix"] = job.video_output_path
 
