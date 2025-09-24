@@ -298,10 +298,17 @@ def process_prompt_directory_trello(args, card) -> int:
             start_frame=int(card.get("startFrame") or 0),
             total_frames=int(card.get("totalFrames") or 0),
             positive_prompt=card.get("description", ""),
-            negative_prompt=card.get("negativePrompt", ""),
-            select_every_n_frames=int(card.get("selectEveryNFrames") or 1),
+            negative_prompt=card.get("negativePrompt", "")
             source_file="trello",
         )
+
+        logger.debug("V2V Processing Started")
+        logger.debug("video-name: " + prompt_data.video_name)
+        logger.debug("start-frame: " + str(prompt_data.start_frame))
+        logger.debug("total-frames: " + str(prompt_data.total_frames))
+        logger.debug("positive-prompt: " + prompt_data.positive_prompt)
+        logger.debug("negative-prompt: " + prompt_data.negative_prompt)
+
         prompt_data.validate()
 
         promptName = prompt_data.video_name
@@ -313,13 +320,6 @@ def process_prompt_directory_trello(args, card) -> int:
             card.get("imageReference"),
             card.get("videoSource"),
         )
-
-        # Override derived paths with URLs (if ComfyUI accepts URLs)
-        for job in render_jobs:
-            if card.get("videoSource"):
-                job.video_input_path = card["videoSource"]
-            if card.get("imageReference"):
-                job.reference_image_path = card["imageReference"]
 
         logger.info(f"Planned {len(render_jobs)} render job(s)")
         ok = process_single_prompt(prompt_data, promptName, args)

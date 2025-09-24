@@ -57,6 +57,8 @@ class JobPlanner:
         video_spec = reference_video_path or str(base.with_suffix(".mp4"))
         image_spec = reference_image_path or str(base.with_suffix(".png"))
 
+        logger.info("Starting download of" + video_spec + " and " + image_spec)
+
         # Materialize video
         if _is_url(video_spec):
             video_local = self._download_file(video_spec, inputs_dir / "input.mp4")
