@@ -298,7 +298,10 @@ def process_prompt_directory_trello(args, card) -> int:
             start_frame=int(card.get("startFrame") or 0),
             total_frames=int(card.get("totalFrames") or 0),
             positive_prompt=card.get("description", ""),
-            negative_prompt=card.get("negativePrompt", "")
+            negative_prompt=card.get("negativePrompt", ""),
+            image_reference=card.get("imageReference"),
+            video_reference=card.get("videoSource"),
+            # select_every_n_frames=int(card.get("selectEveryNFrames") or 1),
             source_file="trello",
         )
 
@@ -311,15 +314,11 @@ def process_prompt_directory_trello(args, card) -> int:
 
         prompt_data.validate()
 
-        promptName = prompt_data.video_name
+        promptName = card.get("cardId")
 
         # Plan + run
         job_planner = JobPlanner(promptName)
-        render_jobs = job_planner.calculate_job_sequence(
-            prompt_data,
-            card.get("imageReference"),
-            card.get("videoSource"),
-        )
+        render_jobs = job_planner.calculate_job_sequence(prompt_data)
 
         logger.info(f"Planned {len(render_jobs)} render job(s)")
         ok = process_single_prompt(prompt_data, promptName, args)

@@ -11,6 +11,8 @@ class PromptData:
     total_frames: int
     positive_prompt: str
     negative_prompt: str
+    image_reference: str
+    video_reference: str
     source_file: Optional[str] = None
     
     def validate(self) -> bool:

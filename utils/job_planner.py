@@ -35,8 +35,6 @@ class JobPlanner:
     def calculate_job_sequence(
         self,
         prompt_data: PromptData,
-        reference_image_path: Optional[str] = None,
-        reference_video_path: Optional[str] = None,
     ) -> List[RenderJob]:
         """Calculate the complete job sequence for a prompt"""
 
@@ -54,8 +52,8 @@ class JobPlanner:
         base = Path(prompt_data.source_file) if prompt_data.source_file else Path(self.promptName)
 
         # Build specs: could be URL or local path, or None -> fallback to <base>.ext
-        video_spec = reference_video_path or str(base.with_suffix(".mp4"))
-        image_spec = reference_image_path or str(base.with_suffix(".png"))
+        video_spec = prompt_data.video_reference or str(base.with_suffix(".mp4"))
+        image_spec = prompt_data.image_reference or str(base.with_suffix(".png"))
 
         logger.info("Starting download of" + video_spec + " and " + image_spec)
 
