@@ -281,6 +281,7 @@ def process_prompt_directory_trello(args, card) -> int:
             total_frames=int(card.get("totalFrames") or 0),
             positive_prompt=card.get("description", ""),
             negative_prompt=card.get("negativePrompt", ""),
+            select_every_n_frames=int(card.get("selectEveryNFrames") or 1),
             source_file="trello",
         )
         prompt_data.validate()

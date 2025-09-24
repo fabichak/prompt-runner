@@ -1,31 +1,29 @@
 {
-  "6": {
+  "2": {
     "inputs": {
-      "text": "The image is a portrait of a young OFA1M1-clothed with blonde hair and cat ears on her head. She is wearing a white bikini and matching panties. She has a big smile on her face and is posing with both arms open. The background is a plain white wall. The overall mood of the image is playful and provocative. she has no tattoos. She is dancing.",
-      "clip": [
-        "12",
+      "frame_position": 0,
+      "masked": false,
+      "repeat": 1,
+      "control_image": [
+        "178",
         0
       ]
     },
-    "class_type": "CLIPTextEncode",
+    "class_type": "VACEControlImageCombine",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "VACE Control Image Combine"
     }
   },
-  "7": {
+  "15": {
     "inputs": {
-      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
-      "clip": [
-        "12",
-        0
-      ]
+      "vae_name": "Wan2_1_VAE_fp32.safetensors"
     },
-    "class_type": "CLIPTextEncode",
+    "class_type": "VAELoader",
     "_meta": {
-      "title": "CLIP Text Encode (Prompt)"
+      "title": "Load VAE"
     }
   },
-  "12": {
+  "18": {
     "inputs": {
       "clip_name": "split_files/text_encoders/umt5_xxl_fp16.safetensors",
       "type": "wan",
@@ -36,224 +34,25 @@
       "title": "Load CLIP"
     }
   },
-  "13": {
+  "69": {
     "inputs": {
-      "vae_name": "Wan2_1_VAE_fp32.safetensors"
-    },
-    "class_type": "VAELoader",
-    "_meta": {
-      "title": "Load VAE"
-    }
-  },
-  "17": {
-    "inputs": {
-      "video": "4.mp4",
-      "force_rate": 0,
-      "custom_width": 0,
-      "custom_height": 0,
-      "frame_load_cap": 0,
-      "skip_first_frames": 0,
-      "select_every_nth": 1,
-      "format": "AnimateDiff"
-    },
-    "class_type": "VHS_LoadVideo",
-    "_meta": {
-      "title": "Load Video (Upload) 🎥🅥🅗🅢"
-    }
-  },
-  "22": {
-    "inputs": {
-      "x": 0,
-      "y": 0,
-      "resize_source": false,
-      "destination": [
-        "23",
-        0
-      ],
-      "source": [
-        "115",
-        0
-      ],
-      "mask": [
-        "27",
-        0
-      ]
-    },
-    "class_type": "ImageCompositeMasked",
-    "_meta": {
-      "title": "ImageCompositeMasked"
-    }
-  },
-  "23": {
-    "inputs": {
-      "width": [
-        "90",
-        0
-      ],
-      "height": [
-        "91",
-        0
-      ],
-      "batch_size": [
-        "17",
-        1
-      ],
-      "color": 16777215
-    },
-    "class_type": "EmptyImage",
-    "_meta": {
-      "title": "EmptyImage"
-    }
-  },
-  "24": {
-    "inputs": {
-      "image": "4.png"
-    },
-    "class_type": "LoadImage",
-    "_meta": {
-      "title": "Load Image"
-    }
-  },
-  "27": {
-    "inputs": {
-      "value": 0.20000000000000004,
-      "width": [
-        "90",
-        0
-      ],
-      "height": [
-        "91",
-        0
-      ]
-    },
-    "class_type": "SolidMask",
-    "_meta": {
-      "title": "SolidMask"
-    }
-  },
-  "38": {
-    "inputs": {
-      "frame_rate": 30,
-      "loop_count": 0,
-      "filename_prefix": "ControlPreview",
-      "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 19,
-      "save_metadata": false,
-      "trim_to_audio": false,
-      "pingpong": false,
-      "save_output": false,
-      "images": [
-        "116",
-        0
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  },
-  "60": {
-    "inputs": {
-      "shift": 8,
+      "lora_name": "split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
+      "strength_model": 0.8,
       "model": [
-        "89",
+        "128",
         0
       ]
     },
-    "class_type": "ModelSamplingSD3",
+    "class_type": "LoraLoaderModelOnly",
     "_meta": {
-      "title": "ModelSamplingSD3"
+      "title": "LoraLoaderModelOnly"
     }
   },
-  "78": {
-    "inputs": {
-      "frame_rate": 30,
-      "loop_count": 0,
-      "filename_prefix": "bbaudio/SuperUltimateVACEUpscale",
-      "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 0,
-      "save_metadata": true,
-      "trim_to_audio": false,
-      "pingpong": false,
-      "save_output": true,
-      "images": [
-        "104",
-        0
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  },
-  "80": {
-    "inputs": {
-      "ckpt_name": "depth_anything_v2_vitl.pth",
-      "resolution": [
-        "90",
-        0
-      ],
-      "image": [
-        "114",
-        0
-      ]
-    },
-    "class_type": "DepthAnythingV2Preprocessor",
-    "_meta": {
-      "title": "Depth Anything V2 - Relative"
-    }
-  },
-  "84": {
-    "inputs": {
-      "coarse": "disable",
-      "resolution": [
-        "91",
-        0
-      ],
-      "image": [
-        "115",
-        0
-      ]
-    },
-    "class_type": "LineArtPreprocessor",
-    "_meta": {
-      "title": "Realistic Lineart"
-    }
-  },
-  "85": {
-    "inputs": {
-      "image": [
-        "84",
-        0
-      ]
-    },
-    "class_type": "ImageInvert",
-    "_meta": {
-      "title": "Invert Image"
-    }
-  },
-  "86": {
-    "inputs": {
-      "sharpen_radius": 1,
-      "sigma": 10,
-      "alpha": 0.10000000000000002,
-      "image": [
-        "85",
-        0
-      ]
-    },
-    "class_type": "ImageSharpen",
-    "_meta": {
-      "title": "Image Sharpen"
-    }
-  },
-  "89": {
+  "79": {
     "inputs": {
       "sage_attention": "sageattn_qk_int8_pv_fp16_triton",
       "model": [
-        "121",
+        "160",
         0
       ]
     },
@@ -262,113 +61,46 @@
       "title": "Patch Sage Attention KJ"
     }
   },
-  "90": {
+  "80": {
     "inputs": {
-      "value": 720
-    },
-    "class_type": "INTConstant",
-    "_meta": {
-      "title": "Width Upscale"
-    }
-  },
-  "91": {
-    "inputs": {
-      "value": 1280
-    },
-    "class_type": "INTConstant",
-    "_meta": {
-      "title": "Height Upscale"
-    }
-  },
-  "97": {
-    "inputs": {
-      "model_name": "RealESRGAN_x2.pth"
-    },
-    "class_type": "UpscaleModelLoader",
-    "_meta": {
-      "title": "Load Upscale Model"
-    }
-  },
-  "104": {
-    "inputs": {
-      "width_upscale": [
-        "90",
-        0
-      ],
-      "height_upscale": [
-        "91",
-        0
-      ],
-      "width": [
-        "90",
-        0
-      ],
-      "height": [
-        "91",
-        0
-      ],
-      "length": 181,
-      "pad_mask_limit": 64,
-      "crossfade_frame": 16,
-      "loopback_crossfade": 0,
-      "crop_ref": false,
-      "ref_as_init_frame": true,
-      "color_match": true,
-      "color_ref": "reference_image",
-      "noise_aug": 0.15,
-      "seed": 1027767355252118,
-      "steps": 4,
-      "cfg": 2.5,
-      "sampler_name": "res_2m_ode",
-      "scheduler": "bong_tangent",
-      "denoise": 0.95,
+      "shift": 2,
       "model": [
-        "60",
-        0
-      ],
-      "positive": [
-        "6",
-        0
-      ],
-      "negative": [
-        "7",
-        0
-      ],
-      "vae": [
-        "13",
-        0
-      ],
-      "input_video": [
-        "116",
-        0
-      ],
-      "croparea_list": [
-        "118",
-        0
-      ],
-      "reference_image": [
-        "112",
-        0
-      ],
-      "control_video": [
-        "116",
-        0
-      ],
-      "nag_params": [
-        "109",
+        "79",
         0
       ]
     },
-    "class_type": "SuperUltimateVACEUpscale",
+    "class_type": "ModelSamplingSD3",
     "_meta": {
-      "title": "SuperUltimate VACE Upscale"
+      "title": "ModelSamplingSD3"
     }
   },
-  "106": {
+  "81": {
+    "inputs": {
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "cat-1",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 0,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "130",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "128": {
     "inputs": {
       "unet_name": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf",
       "device": "cuda:0",
-      "virtual_vram_gb": 24,
+      "virtual_vram_gb": 17,
       "use_other_vram": false,
       "expert_mode_allocations": ""
     },
@@ -377,21 +109,7 @@
       "title": "UnetLoaderGGUFDisTorchMultiGPU"
     }
   },
-  "107": {
-    "inputs": {
-      "lora_name": "split_files/loras/wan2.2_t2v_lightx2v_4steps_lora_v1.1_low_noise.safetensors",
-      "strength_model": 0.8,
-      "model": [
-        "106",
-        0
-      ]
-    },
-    "class_type": "LoraLoaderModelOnly",
-    "_meta": {
-      "title": "LoraLoaderModelOnly"
-    }
-  },
-  "108": {
+  "129": {
     "inputs": {
       "backend": "inductor",
       "fullgraph": false,
@@ -400,7 +118,7 @@
       "compile_transformer_blocks_only": true,
       "dynamo_cache_size_limit": 64,
       "model": [
-        "111",
+        "134",
         0
       ]
     },
@@ -409,24 +127,110 @@
       "title": "TorchCompileModelWanVideoV2"
     }
   },
-  "109": {
+  "130": {
+    "inputs": {
+      "width": [
+        "162",
+        0
+      ],
+      "height": [
+        "163",
+        0
+      ],
+      "loopback_crossfade": 0,
+      "seed": 1114844639563473,
+      "steps": 3,
+      "cfg": 1.1,
+      "sampler_name": "res_3m_ode",
+      "scheduler": "bong_tangent",
+      "denoise": 1,
+      "model": [
+        "80",
+        0
+      ],
+      "clip": [
+        "18",
+        0
+      ],
+      "vae": [
+        "15",
+        0
+      ],
+      "vace_prompt_list": [
+        "132",
+        0
+      ],
+      "vace_control_list": [
+        "2",
+        0
+      ],
+      "nag_params": [
+        "133",
+        0
+      ]
+    },
+    "class_type": "VaceLongVideo",
+    "_meta": {
+      "title": "SuperUltimate VACE Long Video (INPUT)"
+    }
+  },
+  "131": {
+    "inputs": {
+      "whiten_list": "0.8,0.8",
+      "saturation_list": "0.5,0.5",
+      "blur_list": "0.5,0.5",
+      "contour_list": "1,1",
+      "mask_value_list": "1,1",
+      "latent_strength_list": "1,1",
+      "colormatch_strength_list": "0.75"
+    },
+    "class_type": "CustomRefineOption",
+    "_meta": {
+      "title": "Custom Refine Option"
+    }
+  },
+  "132": {
+    "inputs": {
+      "positive_prompt": "OFA1M1-clothed is wearing black short shorts that covers half her butt and translucent red  shirt. There is nothing on her arms, hands and legs. She is in a white room with white walls and white celling, white floor with a plain white rug. There's no objects behind her. She has her mouth closed and seductive expression. She bends over to show her butt to the camera.",
+      "negative_prompt": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走, objects, towel, shower door, door, shower, freckles on butt, smole, visual effects, particles, clothing, clothes, belts, other people, multiple people, objects appearing",
+      "num_frame": [
+        "161",
+        0
+      ],
+      "init_crossfade_frame": 0,
+      "refine_init": 0,
+      "ref_image": [
+        "175",
+        0
+      ],
+      "custom_refine": [
+        "131",
+        0
+      ]
+    },
+    "class_type": "VACEPromptCombine",
+    "_meta": {
+      "title": "VACE Prompt Combine (INPUT)"
+    }
+  },
+  "133": {
     "inputs": {
       "nag_scale": 5,
-      "nag_tau": 2,
-      "nag_alpha": 0.25,
-      "nag_sigma_end": 0
+      "nag_tau": 1,
+      "nag_alpha": 0.2,
+      "nag_sigma_end": 0.2
     },
     "class_type": "NAGParamtersSetting",
     "_meta": {
       "title": "NAG Paramters Setting"
     }
   },
-  "111": {
+  "134": {
     "inputs": {
-      "lora_name": "xxta-maya-clothed-000132.safetensors",
-      "strength_model": 1,
+      "lora_name": "xxta-maya-naked-000220-draft1.safetensors",
+      "strength_model": 0.85,
       "model": [
-        "107",
+        "69",
         0
       ]
     },
@@ -435,33 +239,54 @@
       "title": "LoraLoaderModelOnly"
     }
   },
-  "112": {
+  "160": {
     "inputs": {
-      "width": [
-        "90",
-        0
-      ],
-      "height": [
-        "91",
-        0
-      ],
-      "upscale_method": "lanczos",
-      "keep_proportion": "stretch",
-      "pad_color": "0, 0, 0",
-      "crop_position": "center",
-      "divisible_by": 2,
-      "device": "cpu",
-      "image": [
-        "24",
+      "rel_l1_thresh": 0.14,
+      "start_percent": 0,
+      "end_percent": 1,
+      "cache_device": "main_device",
+      "coefficients": "14B",
+      "model": [
+        "129",
         0
       ]
     },
-    "class_type": "ImageResizeKJv2",
+    "class_type": "WanVideoTeaCacheKJ",
     "_meta": {
-      "title": "Resize Image v2"
+      "title": "WanVideo Tea Cache (native)"
     }
   },
-  "113": {
+  "161": {
+    "inputs": {
+      "value": [
+        "255",
+        1
+      ]
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "LENGTH"
+    }
+  },
+  "162": {
+    "inputs": {
+      "value": 960
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "WIDTH (INPUT)"
+    }
+  },
+  "163": {
+    "inputs": {
+      "value": 1728
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "HEIGHT (INPUT)"
+    }
+  },
+  "174": {
     "inputs": {
       "model": "u2net: general purpose",
       "providers": "CUDA"
@@ -471,14 +296,14 @@
       "title": "🔧 RemBG Session"
     }
   },
-  "114": {
+  "175": {
     "inputs": {
       "rembg_session": [
-        "113",
+        "174",
         0
       ],
       "image": [
-        "115",
+        "256",
         0
       ]
     },
@@ -487,14 +312,178 @@
       "title": "🔧 Image Remove Background"
     }
   },
-  "115": {
+  "176": {
+    "inputs": {
+      "frames": [
+        "177",
+        0
+      ]
+    },
+    "class_type": "Frame Set Reverse [DVB]",
+    "_meta": {
+      "title": "⮠ Frame Set Reverse"
+    }
+  },
+  "177": {
+    "inputs": {
+      "first_frame_index": 0,
+      "step": 1,
+      "framerate_base": 30,
+      "framerate_divisor": 1,
+      "images": [
+        "210",
+        0
+      ]
+    },
+    "class_type": "Create Frame Set [DVB]",
+    "_meta": {
+      "title": "📽 Create Frame Set"
+    }
+  },
+  "178": {
+    "inputs": {
+      "gap_mode": "BLEND",
+      "frames": [
+        "176",
+        0
+      ]
+    },
+    "class_type": "Unwrap Frame Set [DVB]",
+    "_meta": {
+      "title": "📽 Unwrap Frame Set"
+    }
+  },
+  "181": {
+    "inputs": {
+      "ds_factor": 1,
+      "interpolation_factor": [
+        "248",
+        0
+      ],
+      "seed": 720822954071657,
+      "output_flows": false,
+      "gimmvfi_model": [
+        "182",
+        0
+      ],
+      "images": [
+        "130",
+        0
+      ]
+    },
+    "class_type": "GIMMVFI_interpolate",
+    "_meta": {
+      "title": "GIMM-VFI Interpolate"
+    }
+  },
+  "182": {
+    "inputs": {
+      "model": "gimmvfi_r_arb_lpips_fp32.safetensors",
+      "precision": "fp32",
+      "torch_compile": true
+    },
+    "class_type": "DownloadAndLoadGIMMVFIModel",
+    "_meta": {
+      "title": "(Down)Load GIMMVFI Model"
+    }
+  },
+  "184": {
+    "inputs": {
+      "frame_rate": 26,
+      "loop_count": 0,
+      "filename_prefix": "interpolated-",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 0,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "181",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢 (INPUT)"
+    }
+  },
+  "195": {
+    "inputs": {
+      "face_mask": false,
+      "background_mask": true,
+      "hair_mask": false,
+      "body_mask": false,
+      "clothes_mask": false,
+      "confidence": 0.26,
+      "refine_mask": true,
+      "images": [
+        "253",
+        0
+      ]
+    },
+    "class_type": "APersonMaskGenerator",
+    "_meta": {
+      "title": "A Person Mask Generator"
+    }
+  },
+  "201": {
+    "inputs": {
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "bbaudio/SuperUltimateVACELongVideo",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "210",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "205": {
+    "inputs": {
+      "model": "u2net: general purpose",
+      "providers": "CUDA"
+    },
+    "class_type": "RemBGSession+",
+    "_meta": {
+      "title": "🔧 RemBG Session"
+    }
+  },
+  "206": {
+    "inputs": {
+      "rembg_session": [
+        "205",
+        0
+      ],
+      "image": [
+        "253",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "210": {
     "inputs": {
       "width": [
-        "90",
+        "162",
         0
       ],
       "height": [
-        "91",
+        "163",
         0
       ],
       "upscale_method": "lanczos",
@@ -504,7 +493,7 @@
       "divisible_by": 2,
       "device": "cpu",
       "image": [
-        "17",
+        "227",
         0
       ]
     },
@@ -513,29 +502,7 @@
       "title": "Resize Image v2"
     }
   },
-  "116": {
-    "inputs": {
-      "detect_hand": "enable",
-      "detect_body": "enable",
-      "detect_face": "enable",
-      "resolution": [
-        "90",
-        0
-      ],
-      "bbox_detector": "yolo_nas_l_fp16.onnx",
-      "pose_estimator": "dw-ll_ucoco_384_bs5.torchscript.pt",
-      "scale_stick_for_xinsr_cn": "disable",
-      "image": [
-        "114",
-        0
-      ]
-    },
-    "class_type": "DWPreprocessor",
-    "_meta": {
-      "title": "DWPose Estimator"
-    }
-  },
-  "117": {
+  "227": {
     "inputs": {
       "mode": "subtract",
       "foreground_opacity": 1,
@@ -543,11 +510,15 @@
       "position_x": 50,
       "position_y": 50,
       "foreground": [
-        "80",
+        "229",
         0
       ],
       "background": [
-        "116",
+        "229",
+        0
+      ],
+      "foreground_mask": [
+        "243",
         0
       ]
     },
@@ -556,53 +527,132 @@
       "title": "Image Combiner (RMBG) 🖼️"
     }
   },
-  "118": {
+  "229": {
     "inputs": {
-      "width_upscale": [
-        "90",
+      "preprocessor": "Zoe_DepthAnythingPreprocessor",
+      "resolution": [
+        "162",
         0
       ],
-      "height_upscale": [
-        "91",
-        0
-      ],
-      "presets": "'三' for long narrow screen"
-    },
-    "class_type": "CustomCropArea",
-    "_meta": {
-      "title": "Custom Crop Area"
-    }
-  },
-  "120": {
-    "inputs": {
-      "mode": "always",
-      "volume": 1,
-      "file": "notify.mp3",
-      "any": [
-        "104",
+      "image": [
+        "206",
         0
       ]
     },
-    "class_type": "PlaySound|pysssss",
+    "class_type": "AIO_Preprocessor",
     "_meta": {
-      "title": "PlaySound 🐍"
+      "title": "AIO Aux Preprocessor"
     }
   },
-  "121": {
+  "241": {
     "inputs": {
-      "rel_l1_thresh": 0.15,
-      "start_percent": 0.1,
-      "end_percent": 1,
-      "cache_device": "main_device",
-      "coefficients": "14B",
-      "model": [
-        "108",
+      "mask": [
+        "195",
         0
       ]
     },
-    "class_type": "WanVideoTeaCacheKJ",
+    "class_type": "MaskToImage",
     "_meta": {
-      "title": "WanVideo Tea Cache (native)"
+      "title": "Convert Mask to Image"
+    }
+  },
+  "243": {
+    "inputs": {
+      "channel": "R(RGB)",
+      "black_point": 245,
+      "white_point": 255,
+      "gray_point": 1,
+      "invert_output_mask": false,
+      "image": [
+        "241",
+        0
+      ]
+    },
+    "class_type": "LayerMask: ImageToMask",
+    "_meta": {
+      "title": "LayerMask: Image To Mask"
+    }
+  },
+  "248": {
+    "inputs": {
+      "value": 3
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "SELECT FRAME (INPUT)"
+    }
+  },
+  "253": {
+    "inputs": {
+      "prompt": "girl but no hair",
+      "sam_model": "sam_hq_vit_h (2.57GB)",
+      "dino_model": "GroundingDINO_SwinB (938MB)",
+      "threshold": 0.2,
+      "mask_blur": 0,
+      "mask_offset": 0,
+      "invert_output": false,
+      "background": "Color",
+      "background_color": "#ffffff",
+      "image": [
+        "255",
+        0
+      ]
+    },
+    "class_type": "SegmentV2",
+    "_meta": {
+      "title": "Segmentation V2 (RMBG)"
+    }
+  },
+  "254": {
+    "inputs": {
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "bbaudio/SuperUltimateVACELongVideo",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 19,
+      "save_metadata": false,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": false,
+      "images": [
+        "253",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "255": {
+    "inputs": {
+      "video": "",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": [
+        "248",
+        0
+      ],
+      "format": "AnimateDiff"
+    },
+    "class_type": "VHS_LoadVideoPath",
+    "_meta": {
+      "title": "Load Video (Path) 🎥🅥🅗🅢 (INPUT)"
+    }
+  },
+  "256": {
+    "inputs": {
+      "image": "",
+      "custom_width": 0,
+      "custom_height": 0
+    },
+    "class_type": "VHS_LoadImagePath",
+    "_meta": {
+      "title": "Load Image (Path) 🎥🅥🅗🅢"
     }
   }
 }

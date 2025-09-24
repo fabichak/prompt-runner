@@ -21,6 +21,8 @@ class RenderJob:
     start_frame: int = 0
     seed: int = 0
     frames_to_render: int = 101
+    select_every_n_frames: int = 1
+    
     video_input_path: str = ""
     reference_image_path: str = ""
         
