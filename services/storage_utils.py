@@ -60,9 +60,11 @@ class StorageManager:
         return f"{self.get_video_path(promptName, job_number)}_00001.mp4"
        
     def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
+        logger.debug("saving runtime workflow")
         filename = f"{job_number:03d}_{job_type}.json"
         dir_path = self.get_directory(promptName, "workflows")
         filepath = dir_path / filename
+        logger.debug("saving runtime workflow: " + filepath)
         with open(filepath, 'w') as f:
             json.dump(workflow, f, indent=2, default=str, ensure_ascii=False)
         return str(filepath)
