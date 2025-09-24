@@ -1,5 +1,6 @@
 """i2i Orchestrator for managing image-to-image rendering workflow"""
 import time
+import random
 import logging
 from pathlib import Path
 from typing import List, Optional
@@ -63,6 +64,7 @@ class I2IOrchestrator:
                 
                 if new_images:
                     logger.info(f"Processing {len(new_images)} new images")
+                    logger.info(f"Total number of jobs: {len(new_images)  * I2I_IMAGE_RENDER_AMOUNT}")
                     for image_path in new_images:
                         self.process_image(image_path)
                 else:
@@ -82,48 +84,55 @@ class I2IOrchestrator:
             raise
     
     def process_image(self, image_path: Path):
-        """Process a single image with all CFG values and render amounts"""
+        """Process a single image, using a random CFG value for each render."""
         logger.info(f"Processing image: {image_path.name}")
-        
+
         try:
-            image_processed = False
-            total_renders = len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT
-            current_render = 0
-            
-            for cfg_value in I2I_CFG_VALUES:
-                for render_num in range(1, I2I_IMAGE_RENDER_AMOUNT + 1):
-                    current_render += 1
-                    
-                    # Create output filename
-                    image_stem = image_path.stem
-                    output_filename = f"{image_stem}_cfg{cfg_value}_render{render_num}"
-                    
-                    # Create job
-                    job = I2IJob(
-                        image_path=str(image_path),
-                        cfg_value=cfg_value,
-                        render_number=render_num,
-                        output_filename=output_filename
-                    )
-                    
-                    logger.info(f"  Render {current_render}/{total_renders}: {job.job_id}")
-                    
-                    # Modify workflow
-                    workflow = self.workflow_manager.modify_workflow_for_i2i_job(job)
-                    
-                    # Queue and execute
-                    success = self._execute_job(workflow, job)
-                    
-                    if not success:
-                        logger.error(f"  Failed to execute job: {job.job_id}")
-                        # Mark as failed and stop processing this image
-                        self.tracker.mark_failed(str(image_path.absolute()))
-                        return
-            
+            total_renders = I2I_IMAGE_RENDER_AMOUNT
+
+            # Read positive prompt from text file
+            prompt_file = image_path.with_suffix('.txt')
+            positive_prompt = ""
+            if prompt_file.exists():
+                with open(prompt_file, 'r', encoding='utf-8') as f:
+                    positive_prompt = f.read().strip()
+            else:
+                logger.warning(f"No prompt file found for {image_path.name}, using empty prompt.")
+
+            for render_num in range(1, I2I_IMAGE_RENDER_AMOUNT + 1):
+                # Pick a random CFG value for each render
+                cfg_value = random.choice(I2I_CFG_VALUES)
+
+                # Create output filename
+                image_stem = image_path.stem
+                output_filename = f"prompt-runner/{image_stem}_cfg{cfg_value}_render{render_num}"
+
+                # Create job
+                job = I2IJob(
+                    image_path=str(image_path),
+                    cfg_value=cfg_value,
+                    render_number=render_num,
+                    output_filename=output_filename,
+                    positive=positive_prompt
+                )
+
+                logger.info(f"  Render {render_num}/{total_renders}: {job.job_id}")
+                logger.info(f"  positive prompt: {job.positive}")
+
+                # Modify workflow and execute
+                workflow = self.workflow_manager.modify_workflow_for_i2i_job(job)
+                success = self._execute_job(workflow, job)
+
+                if not success:
+                    logger.error(f"  Failed to execute job: {job.job_id}")
+                    # Mark as failed and stop processing this image
+                    self.tracker.mark_failed(str(image_path.absolute()))
+                    return
+
             # Mark as processed after all renders complete
             self.tracker.mark_processed(str(image_path.absolute()))
             logger.info(f"Successfully processed all renders for: {image_path.name}")
-            
+
         except Exception as e:
             logger.error(f"Error processing image {image_path}: {e}")
             self.tracker.mark_failed(str(image_path.absolute()))

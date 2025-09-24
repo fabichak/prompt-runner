@@ -23,10 +23,14 @@
   },
   "279": {
     "inputs": {
-      "delimiter": "",
+      "delimiter": ", ",
       "clean_whitespace": "false",
       "text_a": [
         "284",
+        0
+      ],
+      "text_b": [
+        "366",
         0
       ]
     },
@@ -96,7 +100,7 @@
   },
   "285": {
     "inputs": {
-      "String": "OFA1M1-clothed"
+      "String": "1girl"
     },
     "class_type": "String",
     "_meta": {
@@ -105,7 +109,7 @@
   },
   "286": {
     "inputs": {
-      "text_0": "The image shows a young OFA1M1-clothed sitting at a table in an outdoor cafe. She is wearing a pink blazer and a white tank top. She has long blonde hair and is holding a glass of iced coffee in her right hand. The OFA1M1-clothed is smiling and looking directly at the camera. The background is blurred, but it appears to be a busy street with other tables and chairs. The overall mood of the image is relaxed and casual.",
+      "text_0": "The image is a photograph of a young 11girl sitting on a wooden floor with a brick wall in the background. She is completely naked, with her body facing the camera and her legs crossed in front of her. She has blonde hair and is wearing glasses with thin frames. Her mouth is open and her tongue is sticking out, as if she is making a silly face. The 11girl is holding her hand up to her face, with one hand on her forehead and the other resting on her thigh. There is a colorful blanket draped over her lap. The overall mood of the image is playful and provocative., She has an innie vagina.",
       "text": [
         "279",
         0
@@ -146,10 +150,6 @@
       "Input": 1,
       "text1": [
         "279",
-        0
-      ],
-      "text2": [
-        "343",
         0
       ]
     },
@@ -192,8 +192,8 @@
       },
       "lora_4": {
         "on": false,
-        "lora": "DetailEnhancerV1.safetensors",
-        "strength": 0.2
+        "lora": "Wan2.2-T2V-inniepussy-LOW14B.safetensors",
+        "strength": 0.4
       },
       "lora_5": {
         "on": true,
@@ -228,27 +228,27 @@
   },
   "334": {
     "inputs": {
-      "seed": 422805869274985,
-      "steps": 8,
-      "cfg": 3.3000000000000003,
-      "sampler_name": "res_2s",
+      "seed": 790321388679791,
+      "steps": 4,
+      "cfg": 2.5,
+      "sampler_name": "res_3m_ode",
       "scheduler": "bong_tangent",
-      "denoise": 0.5500000000000002,
+      "denoise": 1,
       "model": [
         "332",
         0
       ],
       "positive": [
-        "288",
+        "367",
         0
       ],
       "negative": [
-        "340",
-        0
+        "367",
+        1
       ],
       "latent_image": [
-        "336",
-        0
+        "367",
+        2
       ]
     },
     "class_type": "KSampler",
@@ -272,26 +272,10 @@
       "title": "VAE Decode"
     }
   },
-  "336": {
-    "inputs": {
-      "pixels": [
-        "345",
-        0
-      ],
-      "vae": [
-        "5",
-        0
-      ]
-    },
-    "class_type": "VAEEncode",
-    "_meta": {
-      "title": "VAE Encode"
-    }
-  },
   "337": {
     "inputs": {
-      "width": 960,
-      "height": 1280,
+      "width": 1080,
+      "height": 1440,
       "interpolation": "lanczos",
       "method": "fill / crop",
       "condition": "always",
@@ -319,15 +303,6 @@
       "title": "Negative Prompt"
     }
   },
-  "343": {
-    "inputs": {
-      "text": "The image shows a female singer performing on stage. She is holding a microphone in her right hand and her mouth is open as she screams. She has her eyes almost closed to show her agressive stance. She has blonde hair styled straight and she is wearing a black leather outfit with silver studs and chains around her waist with pentagrams. The outfit has a high neckline and long sleeves. She also has multiple bracelets and rings on her fingers. The background is blurred, but it appears to be a stage with purple lights."
-    },
-    "class_type": "Text Multiline",
-    "_meta": {
-      "title": "Your own Prompt"
-    }
-  },
   "345": {
     "inputs": {
       "upscale_method": "nearest-exact",
@@ -344,10 +319,7 @@
   },
   "348": {
     "inputs": {
-      "text": [
-        "350",
-        0
-      ],
+      "text": "A woman with brunette hair standing cute at a city street. She slowly moves her body, posing seductive",
       "clip": [
         "333",
         0
@@ -358,84 +330,120 @@
       "title": "CLIP Text Encode (Positive Prompt)"
     }
   },
-  "349": {
-    "inputs": {
-      "text": "8k, UHD, hyper-realism, cinematic, glossy finish, shallow depth of field, cinematic bokeh, plastic skin, uncanny anatomy, frame-perfect symmetry, blurred background, fat, old, milf, big lips, asian",
-      "clip": [
-        "333",
-        0
-      ]
-    },
-    "class_type": "CLIPTextEncode",
-    "_meta": {
-      "title": "Negative Prompt"
-    }
-  },
-  "350": {
-    "inputs": {
-      "text": "this is the internal part of a gym, dimly lit, a bit dark"
-    },
-    "class_type": "Text Multiline",
-    "_meta": {
-      "title": "Your own Prompt"
-    }
-  },
-  "358": {
-    "inputs": {
-      "mode": "normal",
-      "foreground_opacity": 1,
-      "foreground_scale": 1,
-      "position_x": 50,
-      "position_y": 50,
-      "foreground": [
-        "360",
-        0
-      ],
-      "foreground_mask": [
-        "360",
-        1
-      ]
-    },
-    "class_type": "AILab_ImageCombiner",
-    "_meta": {
-      "title": "Image Combiner (RMBG) 🖼️"
-    }
-  },
-  "359": {
-    "inputs": {
-      "model": "isnet-general-use: general purpose",
-      "providers": "CUDA"
-    },
-    "class_type": "RemBGSession+",
-    "_meta": {
-      "title": "🔧 RemBG Session"
-    }
-  },
-  "360": {
-    "inputs": {
-      "rembg_session": [
-        "359",
-        0
-      ],
-      "image": [
-        "335",
-        0
-      ]
-    },
-    "class_type": "ImageRemoveBackground+",
-    "_meta": {
-      "title": "🔧 Image Remove Background"
-    }
-  },
   "365": {
     "inputs": {
-      "image": "C:\\projects\\aiof\\prompt-runner\\i2i-files\\coffee-1.jpg",
+      "image": "C:\\projects\\aiof\\prompt-runner\\v2v-files\\5.png",
       "custom_width": 0,
       "custom_height": 0
     },
     "class_type": "VHS_LoadImagePath",
     "_meta": {
       "title": "Load Image (Path) 🎥🅥🅗🅢"
+    }
+  },
+  "366": {
+    "inputs": {
+      "String": "She has an innie vagina."
+    },
+    "class_type": "String",
+    "_meta": {
+      "title": "String"
+    }
+  },
+  "367": {
+    "inputs": {
+      "width": [
+        "337",
+        1
+      ],
+      "height": [
+        "337",
+        2
+      ],
+      "length": 1,
+      "batch_size": 1,
+      "strength": 1.2500000000000002,
+      "positive": [
+        "288",
+        0
+      ],
+      "negative": [
+        "340",
+        0
+      ],
+      "vae": [
+        "5",
+        0
+      ],
+      "control_video": [
+        "370",
+        0
+      ]
+    },
+    "class_type": "WanVaceToVideo",
+    "_meta": {
+      "title": "WanVaceToVideo"
+    }
+  },
+  "369": {
+    "inputs": {
+      "images": [
+        "370",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Preview Image"
+    }
+  },
+  "370": {
+    "inputs": {
+      "preprocessor": "Zoe_DepthAnythingPreprocessor",
+      "resolution": [
+        "337",
+        1
+      ],
+      "image": [
+        "337",
+        0
+      ]
+    },
+    "class_type": "AIO_Preprocessor",
+    "_meta": {
+      "title": "AIO Aux Preprocessor"
+    }
+  },
+  "371": {
+    "inputs": {
+      "method": "hm",
+      "strength": 0.45000000000000007,
+      "multithread": true,
+      "image_ref": [
+        "365",
+        0
+      ],
+      "image_target": [
+        "335",
+        0
+      ]
+    },
+    "class_type": "ColorMatch",
+    "_meta": {
+      "title": "Color Match"
+    }
+  },
+  "373": {
+    "inputs": {
+      "filename_prefix": "comfyui_i2i",
+      "images": [
+        "371",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save result"
     }
   }
 }

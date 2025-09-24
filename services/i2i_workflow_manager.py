@@ -63,10 +63,14 @@ class I2IWorkflowManager:
             except (subprocess.CalledProcessError, FileNotFoundError):
                 logger.warning(f"wslpath utility not found or failed. Using original path: {image_abs_path}")
 
+
+        #workflow["343"]["inputs"]["text"] = job.positive
+       # workflow["349"]["inputs"]["text"] = job.negative
         workflow[I2I_NODE_IMAGE_PATH]["inputs"]["image"] = image_abs_path
         
         # Set output filename
         workflow[I2I_NODE_OUTPUT]["inputs"]["filename_prefix"] = job.output_filename
+        workflow["373"]["inputs"]["filename_prefix"] = job.output_filename + "-cm"
         
         
         workflow[I2I_SAMPLER_NODE]["inputs"]["cfg"] = job.cfg_value

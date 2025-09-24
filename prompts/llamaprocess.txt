@@ -1,0 +1,14 @@
+Process:
+generate images
+"select=eq(n\,100)" is the specific frame
+
+ffmpeg -i 11.mp4 -vf "select=eq(n\,1)" -vframes 1 11.png
+ffmpeg -i 12.mp4 -vf "select=eq(n\,1)" -vframes 1 12.png
+ffmpeg -i 12.mp4 -vf "select=eq(n\,1)" -vframes 1 12.png
+ffmpeg -i 13.mp4 -vf "select=eq(n\,0)" -vframes 1 13.png
+ffmpeg -i 14.mp4 -vf "select=eq(n\,0)" -vframes 1 14.png
+
+ollama run huihui_ai/llama3.3-abliterated before
+run describe_images_advanced_maya in comfy
+get the description
+

@@ -12,6 +12,7 @@ class I2IJob:
     cfg_value: float
     render_number: int  # Which render iteration (1 to IMAGE_RENDER_AMOUNT)
     output_filename: str
+    positive: str
     seed: Optional[int] = None
     
     def __post_init__(self):
