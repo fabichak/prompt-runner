@@ -324,10 +324,10 @@ def process_prompt_directory_trello(args, card) -> int:
         ok = process_single_prompt(prompt_data, promptName, args)
 
         # Clean up transient artifacts
-        try:
-            StorageManager().cleanup_temp_folder()
-        except Exception:
-            pass
+        # try:
+        #     #StorageManager().cleanup_temp_folder()
+        # except Exception:
+        #     pass
 
         if ok:
             try:
@@ -346,10 +346,10 @@ def process_prompt_directory_trello(args, card) -> int:
     except Exception as e:
         logger.exception(f"Error during V2V processing for card {card.get('cardName')}: {e}")
         # Attempt cleanup even on failure
-        try:
-            StorageManager().cleanup_temp_folder()
-        except Exception:
-            pass
+        # try:
+        #     StorageManager().cleanup_temp_folder()
+        # except Exception:
+        #     pass
         return 1
 
 def main():
