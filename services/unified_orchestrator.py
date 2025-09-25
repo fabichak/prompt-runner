@@ -23,7 +23,7 @@ class UnifiedOrchestrator:
 
     def __init__(self):
         """Initialize the unified orchestrator"""
-        self.comfyui_client = ServiceFactory.create_comfyui_client()
+        self.comfyui_client = ServiceFactory.create_comfyui_client(config.SERVER_ADDRESS)
         self.storage = ServiceFactory.create_storage_manager()
         self.trello_client = TrelloApiClient(config.TRELLO_API_BASE_URL)
 
@@ -42,6 +42,11 @@ class UnifiedOrchestrator:
             Result dictionary with status and outputs
         """
         try:
+
+            if not self.comfyui_client.connect():
+                logger.error("Failed to connect to ComfyUI")
+                return False
+            
             # Determine mode (default to v2v for backward compatibility)
             mode = api_card_data.get('mode', 'v2v')
             card_id = api_card_data.get('cardId')
