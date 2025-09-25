@@ -172,6 +172,7 @@ class UnifiedOrchestrator:
     def _execute_job(self, job: BaseJob, workflow_manager) -> JobResult:
         """Execute a single job through ComfyUI"""
         try:
+            google_storage_output_path = None
             job.status = JobStatus.IN_PROGRESS
             logger.info(f"Executing job {job.job_id} in {job.mode} mode")
 
@@ -227,7 +228,7 @@ class UnifiedOrchestrator:
                             gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/{tmp_path.name}"
                             if storage.upload_file_to_gcs(str(tmp_path), gcs_path):
                                 self.last_output_gcs_path = gcs_path
-                                job.google_storage_output_path = gcs_path.replace('gs//', 'https://storage.googleapis.com/')
+                                google_storage_output_path = gcs_path.replace('gs//', 'https://storage.googleapis.com/')
                     except Exception as e:
                         logger.warning(f"    Could not upload output to GCS: {e}")
 
@@ -242,7 +243,7 @@ class UnifiedOrchestrator:
                 outputs=outputs,
                 job_type=job.mode,
                 prompt_id=prompt_id,
-                google_storage_output_path=job.google_storage_output_path,
+                google_storage_output_path=google_storage_output_path,
                 success=True
             )
 
