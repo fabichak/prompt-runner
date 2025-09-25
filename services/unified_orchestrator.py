@@ -217,7 +217,7 @@ class UnifiedOrchestrator:
                     logger.info(f"Start GS upload")
                     artifact_path = job.get_artifact_full_path()
                     logger.info(f"Artifact path: " + artifact_path)
-                    gcs_path = f"{config.GCS_BUCKET_PATH}trello-output"
+                    gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/"
                     if storage.upload_file_to_gcs(str(artifact_path), gcs_path):
                         logger.info(f"Uploaded to GCS: {gcs_path}")
                         self.last_output_gcs_path = gcs_path
