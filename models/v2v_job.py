@@ -21,10 +21,9 @@ class V2VJob(BaseJob):
     total_frames: int = 101
     select_every_n_frames: int = 1
     seed: int = 0
-
-    # Output paths
-    video_output_path: Optional[str] = None
-    video_output_full_path: Optional[str] = None
+    video_output_filename: str = None
+    video_output_path: str = None
+    video_output_full_path: str = None
 
     @classmethod
     def from_api_data(cls, api_data: Dict[str, Any]) -> "V2VJob":
@@ -69,6 +68,10 @@ class V2VJob(BaseJob):
         except (TypeError, ValueError):
             seed = random.randint(0, 2**32 - 1)
 
+        video_output_filename = f"{api_data.get('cardId')}_{seed}"
+        video_output_path=storage.get_video_path(api_data.get("cardId"), video_output_filename)
+        video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), video_output_filename)
+
         return cls(
             job_id=api_data.get("jobId", api_data.get("cardId")),
             card_id=api_data.get("cardId"),
@@ -81,8 +84,8 @@ class V2VJob(BaseJob):
             total_frames=total_frames,
             select_every_n_frames=select_every_n_frames,
             seed=seed,
-            video_output_path=storage.get_video_path(api_data.get("cardId"), f"{api_data.get('cardId')}_{seed}"),
-            video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), f"{api_data.get('cardId')}_{seed}"),
+            video_output_path=video_output_path,
+            video_output_full_path=video_output_full_path
         )
 
     def to_workflow_params(self) -> Dict[str, Any]:
@@ -97,6 +100,12 @@ class V2VJob(BaseJob):
             "select_every_n_frames": self.select_every_n_frames,
             "output_path": str(self.video_output_path),
         }
+    
+    def get_artifact_filename(self) -> str:
+        return self.video_output_full_path
+    
+    def get_artifact_full_path(self) -> str:
+        return self.video_output_full_path
 
     def validate(self) -> bool:
         if not self.video_path:

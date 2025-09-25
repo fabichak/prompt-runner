@@ -146,6 +146,7 @@ class StorageManager:
             gcs_dest_path: Full GCS destination (e.g. gs://bucket/folder/file.png)
         """
         try:
+            logger.info(f"Trying to upload {local_path} to {gcs_dest_path}")
             local = Path(local_path)
             if not local.exists() or not local.is_file():
                 logger.error(f"Local file not found for upload: {local}")

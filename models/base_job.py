@@ -38,6 +38,16 @@ class BaseJob(ABC):
         """Validate job parameters"""
         pass
 
+    @abstractmethod
+    def get_artifact_full_path(self) -> str:
+        """Validate job parameters"""
+        pass
+    
+    @abstractmethod
+    def get_artifact_filename(self) -> str:
+        """Validate job parameters"""
+        pass
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {

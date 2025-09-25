@@ -211,35 +211,21 @@ class UnifiedOrchestrator:
                 logger.info(f"Success: {success}")
 
                 # Fetch outputs and upload last image to GCS folder 'trello-output'
-                outputs = self.comfyui_client.get_prompt_outputs(prompt_id)
-                logger.info(f"Outputs: {outputs}")
-                if outputs:
-                    last = outputs[-1]
-                    view_url = last.get('url')
-                    if view_url:
-                        self.last_output_view_url = view_url
-                        logger.info(f"    Output: {view_url}")
-                    # Try to download the last image to a temp file and upload to GCS
-                    try:
-                        if view_url:
-                            logger.info(f"View URL: {view_url}")
-                            tmp_path = Path('output') / 'prompt-runner' / 'videos' / last.get('filename', 'output.png')
-                            tmp_path.parent.mkdir(parents=True, exist_ok=True)
-                            logger.info(f"Temp path: {tmp_path}")
-                            import urllib.request as _urlreq
-                            _urlreq.urlretrieve(view_url, str(tmp_path))
-                            from services.storage_utils import StorageManager
-                            logger.info(f"Storage manager: {StorageManager}")
-                            storage = StorageManager()
-                            gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/{tmp_path.name}"
-                            if storage.upload_file_to_gcs(str(tmp_path), gcs_path):
-                                logger.info(f"Uploaded to GCS: {gcs_path}")
-                                self.last_output_gcs_path = gcs_path
-                                logger.info(f"Google storage output path: {google_storage_output_path}")
-                                google_storage_output_path = gcs_path.replace('gs//', 'https://storage.googleapis.com/')
-                                logger.info(f"Google storage output path: {google_storage_output_path}")
-                    except Exception as e:
-                        logger.warning(f"    Could not upload output to GCS: {e}")
+                try:
+                    from services.storage_utils import StorageManager
+                    storage = StorageManager()
+                    logger.info(f"Start GS upload")
+                    artifact_path = job.get_artifact_full_path()
+                    logger.info(f"Artifact path: " + artifact_path)
+                    gcs_path = f"{config.GCS_BUCKET_PATH}trello-output"
+                    if storage.upload_file_to_gcs(str(artifact_path), gcs_path):
+                        logger.info(f"Uploaded to GCS: {gcs_path}")
+                        self.last_output_gcs_path = gcs_path
+                        logger.info(f"Google storage output path: {google_storage_output_path}")
+                        google_storage_output_path = gcs_path.replace('gs//', 'https://storage.googleapis.com/')
+                        logger.info(f"Google storage output path: {google_storage_output_path}")
+                except Exception as e:
+                    logger.warning(f"    Could not upload output to GCS: {e}")
 
             # Mark job as completed
             job.status = JobStatus.COMPLETED
