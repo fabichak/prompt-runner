@@ -1,4 +1,5 @@
 """Unified orchestrator for all job types"""
+import json
 import logging
 import time
 from typing import Dict, Any, Optional, List
@@ -190,6 +191,8 @@ class UnifiedOrchestrator:
                     job.mode
                 )
 
+            logger.info(f"    ✓ Completed: {job.job_id}\nJob data:\n%s", json.dumps(job.to_dict(), indent=2, ensure_ascii=False))
+
             # Queue prompt to ComfyUI
             prompt_id = self.comfyui_client.queue_prompt(modified_workflow, config.CLIENT_ID)
 
@@ -203,9 +206,9 @@ class UnifiedOrchestrator:
             success, _err = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=300)
 
             if success:
-                logger.info(f"    ✓ Completed: {job.output_filename}")
+                logger.info(f"    ✓ Completed: {job.job_id}\nJob data:\n%s", json.dumps(job.to_dict(), indent=2, ensure_ascii=False))
             else:
-                logger.error(f"    ✗ Timeout or error: {job.output_filename}")
+                logger.error(f"    ✗ Timeout or error: {job.job_id}\nJob data:\n%s", json.dumps(job.to_dict(), indent=2, ensure_ascii=False))
             
             if success:
                 # Fetch outputs and upload last image to GCS folder 'trello-output'
@@ -239,9 +242,9 @@ class UnifiedOrchestrator:
 
             return JobResult(
                 job_id=job.job_id,
-                status='completed',
                 outputs=outputs,
-                prompt_id=prompt_id
+                prompt_id=prompt_id,
+                success=True
             )
 
         except Exception as e:
@@ -252,8 +255,8 @@ class UnifiedOrchestrator:
 
             return JobResult(
                 job_id=job.job_id,
-                status='failed',
-                error_message=str(e)
+                error_message=str(e),
+                success=False
             )
 
     def _wait_for_completion(self, prompt_id: str, timeout: int = 600) -> List[str]:
