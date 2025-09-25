@@ -240,7 +240,6 @@ class UnifiedOrchestrator:
 
             return JobResult(
                 job_id=job.job_id,
-                outputs=outputs,
                 job_type=job.mode,
                 prompt_id=prompt_id,
                 google_storage_output_path=google_storage_output_path,
