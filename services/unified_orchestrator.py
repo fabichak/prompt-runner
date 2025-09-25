@@ -212,8 +212,8 @@ class UnifiedOrchestrator:
 
                 # Fetch outputs and upload last image to GCS folder 'trello-output'
                 outputs = self.comfyui_client.get_prompt_outputs(prompt_id)
+                logger.info(f"Outputs: {outputs}")
                 if outputs:
-                    logger.info(f"Outputs: {outputs}")
                     last = outputs[-1]
                     view_url = last.get('url')
                     if view_url:

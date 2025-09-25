@@ -158,8 +158,10 @@ class ComfyUIClient:
         try:
             items = history.get("outputs", {})
             for _node, data in items.items():
+                logger.info(f"Data: {data}")
                 images = data.get("images") or []
                 for img in images:
+                    logger.info(f"Img: {img}")
                     filename = img.get("filename", "")
                     subfolder = img.get("subfolder", "")
                     ftype = img.get("type", "output")
@@ -174,6 +176,7 @@ class ComfyUIClient:
                         "type": ftype,
                         "url": url,
                     })
+                    logger.info(f"Outputs: {outputs}")
         except Exception as e:
             logger.error(f"Error parsing outputs for {prompt_id}: {e}")
             self.slack_client.send_message(f"Error parsing outputs for {prompt_id}: {e}")
