@@ -81,8 +81,8 @@ class V2VJob(BaseJob):
             total_frames=total_frames,
             select_every_n_frames=select_every_n_frames,
             seed=seed,
-            video_output_path=storage.get_video_path(api_data.get("cardId"), api_data.get("cardId")+"_"+seed),
-            video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), api_data.get("cardId")+"_"+seed),
+            video_output_path=storage.get_video_path(api_data.get("cardId"), f"{api_data.get("cardId")}_{seed}"),
+            video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), f"{api_data.get("cardId")}_{seed}"),
         )
 
     def to_workflow_params(self) -> Dict[str, Any]:
