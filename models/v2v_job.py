@@ -5,6 +5,7 @@ import random
 import logging
 
 from models.base_job import BaseJob, JobStatus
+from services.service_factory import ServiceFactory
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,8 @@ class V2VJob(BaseJob):
     @classmethod
     def from_api_data(cls, api_data: Dict[str, Any]) -> "V2VJob":
         """Create V2V job from Trello/API data (simple mapping)."""
+
+        storage = ServiceFactory.create_storage_manager()
 
         # Core fields (prefer your Trello keys, fall back to a couple common aliases)
         video_path = (
@@ -78,8 +81,8 @@ class V2VJob(BaseJob):
             total_frames=total_frames,
             select_every_n_frames=select_every_n_frames,
             seed=seed,
-            video_output_path=api_data.get("videoOutputPath"),
-            video_output_full_path=api_data.get("videoOutputFullPath"),
+            video_output_path=storage.get_video_path(api_data.get("cardId"), api_data.get("cardId")+"_"+seed),
+            video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), api_data.get("cardId")+"_"+seed),
         )
 
     def to_workflow_params(self) -> Dict[str, Any]:

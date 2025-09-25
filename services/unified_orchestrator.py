@@ -222,7 +222,7 @@ class UnifiedOrchestrator:
                     # Try to download the last image to a temp file and upload to GCS
                     try:
                         if view_url:
-                            tmp_path = Path('output') / 'prompt-runner' / 'temp' / last.get('filename', 'output.png')
+                            tmp_path = Path('output') / 'prompt-runner' / 'videos' / last.get('filename', 'output.png')
                             tmp_path.parent.mkdir(parents=True, exist_ok=True)
                             import urllib.request as _urlreq
                             _urlreq.urlretrieve(view_url, str(tmp_path))
@@ -243,6 +243,7 @@ class UnifiedOrchestrator:
             return JobResult(
                 job_id=job.job_id,
                 outputs=outputs,
+                job_type=job.mode,
                 prompt_id=prompt_id,
                 success=True
             )
@@ -255,6 +256,7 @@ class UnifiedOrchestrator:
 
             return JobResult(
                 job_id=job.job_id,
+                job_type=job.mode,
                 error_message=str(e),
                 success=False
             )
