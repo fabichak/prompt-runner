@@ -15,6 +15,7 @@ class JobResult:
     output_path: Optional[str] = None
     latent_path: Optional[str] = None
     reference_path: Optional[str] = None
+    google_storage_output_path: Optional[str] = None
     
     # Timing
     start_time: datetime = field(default_factory=datetime.now)

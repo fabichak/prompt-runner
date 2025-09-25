@@ -51,12 +51,12 @@ class StorageManager:
         subfolder.mkdir(parents=True, exist_ok=True)
         return subfolder
      
-    def get_video_path(self, promptName: str, job_number: str) -> Path:
+    def get_video_path(self, promptName: str, job_number: str) -> str:
         """Get path for video file"""
         dir_path = self.get_directory(promptName, "videos")
         return dir_path / f"job_{job_number}"
     
-    def get_video_full_path(self, promptName: str, job_number: str) -> Path:
+    def get_video_full_path(self, promptName: str, job_number: str) -> str:
         return f"{self.get_video_path(promptName, job_number)}_00001.mp4"
        
     def save_runtime_workflow(self, workflow: Dict[str, Any], promptName: str, job_number:int, job_type:str) -> str:
