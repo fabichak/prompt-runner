@@ -93,6 +93,12 @@ class UnifiedOrchestrator:
             # Execute the job
             result = self._execute_job(job, workflow_manager)
 
+            if result == False:
+                return {
+                    'status': 'error',
+                    'error': 'Failed to execute job'
+                }
+
             # Report completion to API
             self.trello_client.completed_card(
                 card_id=card_id,
@@ -186,10 +192,44 @@ class UnifiedOrchestrator:
 
             # Queue prompt to ComfyUI
             prompt_id = self.comfyui_client.queue_prompt(modified_workflow, config.CLIENT_ID)
+
+            if not prompt_id:
+                logger.error(f"Failed to queue prompt for {job.job_id}")
+                return False
+                
             logger.info(f"Queued prompt {prompt_id} for job {job.job_id}")
 
             # Wait for completion
-            outputs = self._wait_for_completion(prompt_id)
+            success, _err = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=300)
+
+            if success:
+                logger.info(f"    ✓ Completed: {job.output_filename}")
+            else:
+                logger.error(f"    ✗ Timeout or error: {job.output_filename}")
+            
+            if success:
+                # Fetch outputs and upload last image to GCS folder 'trello-output'
+                outputs = self.comfyui_client.get_prompt_outputs(prompt_id)
+                if outputs:
+                    last = outputs[-1]
+                    view_url = last.get('url')
+                    if view_url:
+                        self.last_output_view_url = view_url
+                        logger.info(f"    Output: {view_url}")
+                    # Try to download the last image to a temp file and upload to GCS
+                    try:
+                        if view_url:
+                            tmp_path = Path('output') / 'prompt-runner' / 'temp' / last.get('filename', 'output.png')
+                            tmp_path.parent.mkdir(parents=True, exist_ok=True)
+                            import urllib.request as _urlreq
+                            _urlreq.urlretrieve(view_url, str(tmp_path))
+                            from services.storage_utils import StorageManager
+                            storage = StorageManager()
+                            gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/{tmp_path.name}"
+                            if storage.upload_file_to_gcs(str(tmp_path), gcs_path):
+                                self.last_output_gcs_path = gcs_path
+                    except Exception as e:
+                        logger.warning(f"    Could not upload output to GCS: {e}")
 
             # Mark job as completed
             job.status = JobStatus.COMPLETED
