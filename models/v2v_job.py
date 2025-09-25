@@ -87,15 +87,15 @@ class V2VJob(BaseJob):
 
     def to_workflow_params(self) -> Dict[str, Any]:
         return {
-            "video_path": self.video_path,
-            "image_path": self.reference_image_path,
+            "video_path": str(self.video_path),
+            "image_path": str(self.reference_image_path),
             "positive_prompt": self.positive_prompt,
             "negative_prompt": self.negative_prompt,
             "seed": self.seed,
             "total_frames": self.total_frames,
             "start_frame": self.start_frame,
             "select_every_n_frames": self.select_every_n_frames,
-            "output_path": self.video_output_path,
+            "output_path": str(self.video_output_path),
         }
 
     def validate(self) -> bool:
@@ -119,16 +119,16 @@ class V2VJob(BaseJob):
     def to_dict(self) -> Dict[str, Any]:
         base_dict = super().to_dict()
         base_dict.update({
-            "video_path": self.video_path,
-            "reference_image_path": self.reference_image_path,
+            "video_path": str(self.video_path),
+            "reference_image_path": str(self.reference_image_path),
             "positive_prompt": self.positive_prompt,
             "negative_prompt": self.negative_prompt,
             "start_frame": self.start_frame,
             "total_frames": self.total_frames,
             "select_every_n_frames": self.select_every_n_frames,
             "seed": self.seed,
-            "video_output_path": self.video_output_path,
-            "video_output_full_path": self.video_output_full_path,
+            "video_output_path": str(self.video_output_path),
+            "video_output_full_path": str(self.video_output_full_path),
         })
         return base_dict
 
