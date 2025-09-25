@@ -1,6 +1,6 @@
 """Base job model providing common interface for all job types"""
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, Any, Optional
 from enum import Enum
 
@@ -19,8 +19,8 @@ class BaseJob(ABC):
     job_id: str
     card_id: str  # Trello card ID for API tracking
     mode: str  # 'v2v', 'i2i', future: 't2i', 'a2v'
-    status: JobStatus = JobStatus.PENDING
-    error_message: Optional[str] = None
+    status: JobStatus = field(default=JobStatus.PENDING, init=False)
+    error_message: Optional[str] = field(default=None, init=False)
 
     @abstractmethod
     def to_workflow_params(self) -> Dict[str, Any]:

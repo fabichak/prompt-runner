@@ -16,6 +16,7 @@ from datetime import datetime
 import config
 config.CLIENT_ID = str(uuid.uuid4())
 
+from services.slackClient import SlackClient
 from services.unified_orchestrator import UnifiedOrchestrator
 from services.trello_client import TrelloApiClient
 from services.service_factory import ServiceFactory
@@ -152,9 +153,10 @@ def process_trello_jobs(args, logger) -> int:
     """Main processing loop for API jobs"""
     orchestrator = UnifiedOrchestrator()
     client = TrelloApiClient(config.TRELLO_API_BASE_URL)
+    slack_client = SlackClient()
 
-    poll_interval = args.poll_interval
-    max_poll_seconds = args.max_poll_seconds
+    poll_interval = 15
+    max_poll_seconds = 600
     jobs_processed = 0
 
     logger.info(f"Starting Trello job processing (continuous={args.continuous})")
@@ -172,7 +174,6 @@ def process_trello_jobs(args, logger) -> int:
         if not card:
             if not args.continuous:
                 logger.info("No more cards to process. Exiting.")
-                break
 
             logger.info(
                 f"No cards available. Polling for up to {max_poll_seconds}s "
@@ -184,13 +185,14 @@ def process_trello_jobs(args, logger) -> int:
             while time.time() < deadline and not card:
                 time.sleep(poll_interval)
                 try:
+                    logger.info("Polling for next card from Trello API")
                     card = client.get_next_card()
                 except Exception as e:
                     logger.warning(f"Polling error: {e}")
+                    slack_client.send_message(f"Polling error: {e}")
 
             if not card:
                 logger.info("No cards found during polling window. Stopping.")
-                break
 
         # Process the card
         try:

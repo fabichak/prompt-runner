@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from models.base_job import BaseJob, JobStatus
 from models.job_result import JobResult
 from services.mode_registry import ModeRegistry
-from services.factory import ServiceFactory
+from services.service_factory import ServiceFactory
 from services.comfyui_client import ComfyUIClient
 from services.storage_utils import StorageManager
 from services.trello_client import TrelloApiClient

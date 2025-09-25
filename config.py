@@ -77,7 +77,7 @@ I2I_NODE_IMAGE_PATH = "365"
 I2I_NODE_OUTPUT = "53"
 I2I_SAMPLER_NODE = "334" 
 
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 
 # External API Endpoints
 TRELLO_API_BASE_URL = "https://xxtria-prompt-scheduler-76618010335.us-central1.run.app"
