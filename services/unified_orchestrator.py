@@ -208,9 +208,12 @@ class UnifiedOrchestrator:
                 logger.error(f"    ✗ Timeout or error: {job.job_id}\nJob data:\n%s", json.dumps(job.to_dict(), indent=2, ensure_ascii=False))
             
             if success:
+                logger.info(f"Success: {success}")
+
                 # Fetch outputs and upload last image to GCS folder 'trello-output'
                 outputs = self.comfyui_client.get_prompt_outputs(prompt_id)
                 if outputs:
+                    logger.info(f"Outputs: {outputs}")
                     last = outputs[-1]
                     view_url = last.get('url')
                     if view_url:
@@ -219,16 +222,22 @@ class UnifiedOrchestrator:
                     # Try to download the last image to a temp file and upload to GCS
                     try:
                         if view_url:
+                            logger.info(f"View URL: {view_url}")
                             tmp_path = Path('output') / 'prompt-runner' / 'videos' / last.get('filename', 'output.png')
                             tmp_path.parent.mkdir(parents=True, exist_ok=True)
+                            logger.info(f"Temp path: {tmp_path}")
                             import urllib.request as _urlreq
                             _urlreq.urlretrieve(view_url, str(tmp_path))
                             from services.storage_utils import StorageManager
+                            logger.info(f"Storage manager: {StorageManager}")
                             storage = StorageManager()
                             gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/{tmp_path.name}"
                             if storage.upload_file_to_gcs(str(tmp_path), gcs_path):
+                                logger.info(f"Uploaded to GCS: {gcs_path}")
                                 self.last_output_gcs_path = gcs_path
+                                logger.info(f"Google storage output path: {google_storage_output_path}")
                                 google_storage_output_path = gcs_path.replace('gs//', 'https://storage.googleapis.com/')
+                                logger.info(f"Google storage output path: {google_storage_output_path}")
                     except Exception as e:
                         logger.warning(f"    Could not upload output to GCS: {e}")
 
