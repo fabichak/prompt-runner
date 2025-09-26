@@ -72,9 +72,6 @@ class V2VJob(BaseJob):
         video_output_path=storage.get_video_path(api_data.get("cardId"), video_output_filename)
         video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), video_output_filename)
 
-        logger.info(f"video_output_filename: {video_output_filename}")
-        logger.info(f"video_output_path: {video_output_path}")
-        logger.info(f"video_output_full_path: {video_output_full_path}")
         return cls(
             job_id=api_data.get("jobId", api_data.get("cardId")),
             card_id=api_data.get("cardId"),
