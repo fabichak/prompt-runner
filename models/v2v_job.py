@@ -103,8 +103,8 @@ class V2VJob(BaseJob):
         }
     
     def get_artifact_filename(self) -> str:
-        return self.video_output_filename
-    
+        return f"job_{self.card_id}_{self.seed}_00001.mp4"
+
     def get_artifact_full_path(self) -> str:
         return self.video_output_full_path
 
