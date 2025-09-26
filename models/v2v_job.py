@@ -87,6 +87,7 @@ class V2VJob(BaseJob):
             total_frames=total_frames,
             select_every_n_frames=select_every_n_frames,
             seed=seed,
+            video_output_filename=video_output_filename,
             video_output_path=video_output_path,
             video_output_full_path=video_output_full_path
         )
