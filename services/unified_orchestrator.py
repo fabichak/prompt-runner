@@ -219,10 +219,11 @@ class UnifiedOrchestrator:
                     logger.info(f"Artifact path: " + artifact_path)
                     gcs_path = f"{config.GCS_BUCKET_PATH}trello-output/"
                     if storage.upload_file_to_gcs(str(artifact_path), gcs_path):
-                        logger.info(f"Uploaded to GCS: {gcs_path}")
+                        logger.info(f"Uploaded to GCS gcs_path: {gcs_path}")
+                        logger.info(f"Uploaded to GCS artifact_path: {artifact_path}")
                         self.last_output_gcs_path = gcs_path
                         logger.info(f"Google storage output path: {google_storage_output_path}")
-                        google_storage_output_path = gcs_path.replace('gs://', 'https://storage.googleapis.com/') + job.get_artifact_filename()
+                        google_storage_output_path = gcs_path.replace('gs://', 'https://storage.googleapis.com/') + str(artifact_path)
                         logger.info(f"Google storage output path: {google_storage_output_path}")
                 except Exception as e:
                     logger.warning(f"    Could not upload output to GCS: {e}")
