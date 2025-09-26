@@ -81,6 +81,9 @@ class JobPlanner:
             prompt_data.source_file, job_number, prompt_data.total_frames
         )
 
+        logger.info(f"video_output_path: {self.storage.get_video_path(self.promptName, job_number)}")
+        logger.info(f"video_output_full_path: {self.storage.get_video_full_path(self.promptName, job_number)}")
+
         render_job = RenderJob(
             prompt_name=self.promptName,
             job_number=job_number,
