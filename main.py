@@ -266,8 +266,9 @@ def process_prompt_directory_trello(args, card) -> int:
             logger.info("=" * 80)
 
             links = orchestrator.get_last_output_links() or {}
+            logger.info(f"Links: {links}")
             gcs_link = links.get("gcs_path") or ""
-
+            logger.info(f"GCS link: {gcs_link}")
             # Convert gs://bucket/path -> https://storage.googleapis.com/bucket/path
             if gcs_link.startswith("gs://"):
                 https_link = "https://storage.googleapis.com/" + gcs_link[len("gs://"):]
@@ -277,10 +278,10 @@ def process_prompt_directory_trello(args, card) -> int:
             result_payload = https_link or response
 
             # Clean up transient artifacts
-            try:
-                StorageManager().cleanup_temp_folder()
-            except Exception:
-                pass
+            # try:
+            #     StorageManager().cleanup_temp_folder()
+            # except Exception:
+            #     pass
 
             TrelloApiClient(config.TRELLO_API_BASE_URL).completed_card(
                 card_id=card.get("cardId"),
