@@ -21,6 +21,8 @@ class V2VJob(BaseJob):
     total_frames: int = 101
     select_every_n_frames: int = 1
     seed: int = 0
+    steps: int = 0
+    cfg: float = 0.0
     video_output_filename: str = None
     video_output_path: str = None
     video_output_full_path: str = None
@@ -51,16 +53,41 @@ class V2VJob(BaseJob):
         )
         negative_prompt = api_data.get("negativePrompt") or ""
 
-        # Light casting for ints
+        # Light casting helpers
         def as_int(v, default):
             try:
                 return int(v)
             except (TypeError, ValueError):
                 return default
+        def as_float(v, default):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        def first_present(d: Dict[str, Any], keys: list[str]):
+            for k in keys:
+                if k in d and d.get(k) is not None:
+                    return d.get(k)
+            return None
 
         start_frame = as_int(api_data.get("startFrame"), 0)
         total_frames = as_int(api_data.get("totalFrames"), 101)
         select_every_n_frames = as_int(api_data.get("selectEveryNFrames"), 1)
+        # Accept multiple aliases from the card for steps/cfg
+        steps_aliases = [
+            "steps", "samplerSteps", "numSteps", "numInferenceSteps",
+            "samplingSteps", "sdSteps"
+        ]
+        cfg_aliases = [
+            "cfg", "cfgScale", "guidance", "cfg_value", "cfgScaleValue"
+        ]
+
+        steps_val = first_present(api_data, steps_aliases)
+        cfg_val = first_present(api_data, cfg_aliases)
+
+        steps = as_int(steps_val, 0)
+        cfg = as_float(cfg_val, 0.0)
 
         # Seed (random if not provided / invalid)
         try:
@@ -84,6 +111,8 @@ class V2VJob(BaseJob):
             total_frames=total_frames,
             select_every_n_frames=select_every_n_frames,
             seed=seed,
+            steps=steps,
+            cfg=cfg,
             video_output_filename=video_output_filename,
             video_output_path=video_output_path,
             video_output_full_path=video_output_full_path
@@ -96,6 +125,8 @@ class V2VJob(BaseJob):
             "positive_prompt": self.positive_prompt,
             "negative_prompt": self.negative_prompt,
             "seed": self.seed,
+            "steps": self.steps,
+            "cfg": self.cfg,
             "total_frames": self.total_frames,
             "start_frame": self.start_frame,
             "select_every_n_frames": self.select_every_n_frames,
