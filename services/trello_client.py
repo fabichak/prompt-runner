@@ -37,8 +37,8 @@ class TrelloApiClient:
             raise RuntimeError(payload.get("error", {}).get("message", "Request failed"))
         return payload.get("data")
 
-    def completed_card(self, card_id: str, result: dict, timeout: int = 10):
-        payload = self._post_json("/api/trello/completedCard", {"cardId": card_id, "result": result}, timeout)
+    def completed_card(self, card_id: str, result: bool, message: str, timeout: int = 10):
+        payload = self._post_json("/api/trello/completedCard", {"cardId": card_id, "result": result, "message": message}, timeout)
         if not payload.get("success"):
             raise RuntimeError(payload.get("error", {}).get("message", "Request failed"))
         return payload.get("data")

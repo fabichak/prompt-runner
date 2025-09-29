@@ -110,7 +110,6 @@ def main():
 
     # Check for any imports that need updating
     print("\n📝 Remember to update imports in any custom scripts!")
-    print("  Old: from services.job_orchestrator import JobOrchestrator")
     print("  New: from services.unified_orchestrator import UnifiedOrchestrator")
     print("\n  Old: from utils.job_planner import JobPlanner")
     print("  New: (No longer needed - removed)")

@@ -75,7 +75,8 @@ class UnifiedOrchestrator:
                 # Report failure to API
                 self.trello_client.completed_card(
                     card_id=card_id,
-                    result={'status': 'failed', 'error': error_msg}
+                    result=False,
+                    message=error_msg
                 )
                 return {'status': 'failed', 'error': error_msg}
 
@@ -103,7 +104,8 @@ class UnifiedOrchestrator:
             # Report completion to API
             self.trello_client.completed_card(
                 card_id=card_id,
-                result=result.google_storage_output_path
+                result=True,
+                message=result.google_storage_output_path
             )
 
             return {
@@ -120,7 +122,8 @@ class UnifiedOrchestrator:
                 try:
                     self.trello_client.completed_card(
                         card_id=card_id,
-                        result={'status': 'error', 'error': str(e)}
+                        result=False,
+                        message=str(e)
                     )
                 except Exception as api_error:
                     logger.error(f"Failed to report error to API: {api_error}")

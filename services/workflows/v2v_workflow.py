@@ -10,7 +10,7 @@ from models.v2v_job import V2VJob
 from config import (
     NODE_HEIGHT, NODE_LOAD_VIDEO_PATH, NODE_PROMPT_NEG, NODE_PROMPT_POS,
     NODE_REF_IMAGES, NODE_SAMPLER, NODE_VIDEO_COMBINE,
-    NODE_WIDTH, STEPS, VIDEO_HEIGHT, VIDEO_WIDTH, JSON_WORKFLOW_FILE
+    NODE_WIDTH, VIDEO_HEIGHT, VIDEO_WIDTH, JSON_WORKFLOW_FILE
 )
 
 logger = logging.getLogger(__name__)
@@ -50,7 +50,9 @@ class V2VWorkflowManager(BaseWorkflowManager):
         # Set sampler parameters
         if str(NODE_SAMPLER) in workflow:
             workflow[str(NODE_SAMPLER)]["inputs"]["seed"] = params['seed']
-            workflow[str(NODE_SAMPLER)]["inputs"]["steps"] = STEPS
+            workflow[str(NODE_SAMPLER)]["inputs"]["steps"] = params['steps']
+            workflow[str(NODE_SAMPLER)]["inputs"]["select_every_n_frames"] = params['select_every_n_frames']
+            workflow[str(NODE_SAMPLER)]["inputs"]["cfg"] = params['cfg']
 
         # Set output path
         if str(NODE_VIDEO_COMBINE) in workflow and params.get('output_path'):

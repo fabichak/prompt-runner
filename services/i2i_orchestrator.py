@@ -2,7 +2,7 @@
 import time
 import logging
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import Optional, Dict
 import requests
 from urllib.parse import urlparse, unquote
 
@@ -11,7 +11,7 @@ from services.image_scanner import ImageScanner
 from services.image_tracker import ImageTracker
 from services.i2i_workflow_manager import I2IWorkflowManager
 from config import (
-    I2I_CFG_VALUES, I2I_IMAGE_RENDER_AMOUNT, I2I_PROCESSED_FILE, 
+    I2I_IMAGE_RENDER_AMOUNT, I2I_PROCESSED_FILE, 
     I2I_FAILED_FILE, I2I_POLL_INTERVAL, I2I_INPUT_DIR,
     I2I_WORKFLOW_FILE, SERVER_ADDRESS, GCS_BUCKET_PATH
 )
@@ -44,15 +44,6 @@ class I2IOrchestrator:
              self.storage
         )
         
-        # Validate CFG values are configured
-        # if not I2I_CFG_VALUES:
-        #     raise ValueError("I2I_CFG_VALUES is empty. Please configure CFG values in config.py")
-        
-        # logger.info(f"I2I Orchestrator initialized")
-        # logger.info(f"CFG values: {I2I_CFG_VALUES}")
-        # logger.info(f"Renders per CFG: {I2I_IMAGE_RENDER_AMOUNT}")
-        # logger.info(f"Total renders per image: {len(I2I_CFG_VALUES) * I2I_IMAGE_RENDER_AMOUNT}")
-
     def _download_file(self, url: str, out_path) -> str:
         out_path = Path(out_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)

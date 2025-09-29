@@ -8,15 +8,14 @@ logger = logging.getLogger(__name__)
 
 class SlackClient:
     def send_message(self, text: str) -> None:
-        print()
-        # try:
-        #     resp = requests.post(
-        #         SLACK_WEBHOOK_URL,
-        #         json={"text": text},
-        #         headers={"Content-Type": "application/json"},
-        #         timeout=10,
-        #     )
-        #     resp.raise_for_status()
-        #     print("Message sent to Slack")
-        # except Exception as e:
-        #     print(f"Error sending to Slack: {e}")
+        try:
+            resp = requests.post(
+                SLACK_WEBHOOK_URL,
+                json={"text": text},
+                headers={"Content-Type": "application/json"},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            print("Message sent to Slack")
+        except Exception as e:
+            print(f"Error sending to Slack: {e}")

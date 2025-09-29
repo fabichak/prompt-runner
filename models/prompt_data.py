@@ -14,6 +14,9 @@ class PromptData:
     image_reference: str
     video_reference: str
     source_file: Optional[str] = None
+    steps: int = 0
+    cfg: float = 0
+    select_every_n_frames: int = 1
     
     def validate(self) -> bool:
         """Validate prompt data integrity"""
