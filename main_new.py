@@ -189,7 +189,7 @@ def process_trello_jobs(args, logger) -> int:
                     card = client.get_next_card()
                 except Exception as e:
                     logger.warning(f"Polling error: {e}")
-                    slack_client.send_message(f"Polling error: {e}")
+                    slack_client.send_message(f"Erro ao buscar card: {e}")
 
             if not card:
                 logger.info("No cards found during polling window. Stopping.")

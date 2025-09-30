@@ -16,6 +16,5 @@ class SlackClient:
                 timeout=10,
             )
             resp.raise_for_status()
-            print("Message sent to Slack")
         except Exception as e:
-            print(f"Error sending to Slack: {e}")
+            logger.error(f"Error sending to Slack: {e}")
