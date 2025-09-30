@@ -6,6 +6,7 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 from urllib.request import urlretrieve
 from urllib.parse import urlparse
+import os
 
 from models.base_job import BaseJob, JobStatus
 from models.job_result import JobResult
@@ -167,6 +168,37 @@ class UnifiedOrchestrator:
 
         try:
             urlretrieve(url, local_path)
+
+            # Basic validation: ensure video downloads look like real media
+            try:
+                suffix = local_path.suffix.lower()
+                is_video_ext = suffix in {".mp4", ".mov", ".webm", ".mkv"}
+
+                if is_video_ext:
+                    size_bytes = local_path.stat().st_size
+                    if size_bytes < 20_000:  # Too small to be a valid video
+                        raise RuntimeError("Downloaded content is too small to be a valid video")
+
+                    with open(local_path, "rb") as f:
+                        head = f.read(16384)
+
+                    # Detect obvious HTML page instead of media
+                    if b"<html" in head.lower() or b"<!doctype html" in head.lower():
+                        raise RuntimeError("URL returned an HTML page, not a video file")
+
+                    # Minimal MP4/MOV check: 'ftyp' box should exist near the start
+                    if suffix in {".mp4", ".mov"} and b"ftyp" not in head:
+                        raise RuntimeError("Downloaded file doesn't look like an MP4/MOV (missing ftyp)")
+
+            except Exception as val_err:
+                # Cleanup invalid file and bubble up error
+                try:
+                    if local_path.exists():
+                        os.remove(local_path)
+                finally:
+                    logger.error(f"Invalid download for {url}: {val_err}")
+                raise
+
             return str(local_path.absolute())
         except Exception as e:
             logger.error(f"Failed to download {url}: {e}")
