@@ -39,7 +39,6 @@ GCS_BUCKET_PATH = "gs://aiof-saved-files/"
 
 # VIDEO
 FRAMES_TO_RENDER = 161  # Constant frames per chunk
-STEPS = 3
 VIDEO_WIDTH = 352
 VIDEO_HEIGHT = 624
 CONTEXT_OPTIONS_FRAMES = 220
@@ -64,8 +63,6 @@ RETRY_DELAY = 5  # seconds
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
 
-I2I_CFG_VALUES = [2.5]
-
 I2I_IMAGE_RENDER_AMOUNT = 1  # Number of renders per CFG value
 I2I_SUPPORTED_IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
 I2I_EXCLUDED_FOLDERS = {'_old'}  # Folders to exclude from scanning
@@ -77,7 +74,7 @@ I2I_NODE_IMAGE_PATH = "365"
 I2I_NODE_OUTPUT = "53"
 I2I_SAMPLER_NODE = "334" 
 
-SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
 
 # External API Endpoints
 TRELLO_API_BASE_URL = "https://xxtria-prompt-scheduler-76618010335.us-central1.run.app"
