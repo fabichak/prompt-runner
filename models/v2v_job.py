@@ -73,7 +73,7 @@ class V2VJob(BaseJob):
 
         start_frame = as_int(api_data.get("startFrame"), 0)
         total_frames = as_int(api_data.get("totalFrames"), 101)
-        select_every_n_frames = as_int(api_data.get("selectEveryNFrames"), 1)
+        select_every_n_frames = as_int(api_data.get("everyFrames"), 1)
         # Accept multiple aliases from the card for steps/cfg
         steps_aliases = [
             "steps", "samplerSteps", "numSteps", "numInferenceSteps",

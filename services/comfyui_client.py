@@ -10,7 +10,7 @@ import time
 from typing import Dict, Any, Optional, Tuple, List
 import logging
 
-from config import SERVER_ADDRESS, MAX_RETRIES, RETRY_DELAY, SLACK_WEBHOOK_URL
+from config import SERVER_ADDRESS, MAX_RETRIES, RETRY_DELAY
 from services.slackClient import SlackClient
 
 logger = logging.getLogger(__name__)
@@ -38,7 +38,6 @@ class ComfyUIClient:
             logger.error(f"Failed to connect to ComfyUI: {e}")
             logger.error(f"WebSocket URL: {ws_url}")
             self.slack_client.send_message(f"Falha ao conectar ao servidor ComfyUI: {e}")
-            self.slack_client.send_message(f"WebSocket URL:  {ws_url}")
             return False
     
     def disconnect(self):
