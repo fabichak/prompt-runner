@@ -87,6 +87,9 @@ echo "----------------------------------------"
 python ComfyUI/custom_nodes/comfyui-manager/cm-cli.py fix all || echo "Fix completed with warnings"
 
 source .env 
+
+export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/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"
+
 git clone https://github.com/fabichak/prompt-runner.git
 
 echo "Waiting for models to finish downloading..."
