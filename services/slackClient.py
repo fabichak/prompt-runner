@@ -1,7 +1,6 @@
 import requests
 import logging
-
-from config import SLACK_WEBHOOK_URL
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +9,7 @@ class SlackClient:
     def send_message(self, text: str) -> None:
         try:
             resp = requests.post(
-                SLACK_WEBHOOK_URL,
+                os.environ.get("SLACK_WEBHOOK_URL"),
                 json={"text": text},
                 headers={"Content-Type": "application/json"},
                 timeout=10,
