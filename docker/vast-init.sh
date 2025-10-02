@@ -88,6 +88,22 @@ python ComfyUI/custom_nodes/comfyui-manager/cm-cli.py fix all || echo "Fix compl
 
 source .env 
 
+if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+  if grep -q '^SLACK_WEBHOOK_URL=' /etc/environment 2>/dev/null; then
+    # extrai o valor (com ou sem aspas) sem imprimir o segredo
+    _v="$(grep -m1 '^SLACK_WEBHOOK_URL=' /etc/environment \
+         | sed -E 's/^SLACK_WEBHOOK_URL="?([^"]*)"?$/\1/')"
+    if [ -n "${_v:-}" ]; then
+      export SLACK_WEBHOOK_URL="$_v"
+      unset _v
+    else
+      echo "ERRO: SLACK_WEBHOOK_URL vazia em /etc/environment"; exit 1
+    fi
+  else
+    echo "ERRO: SLACK_WEBHOOK_URL não encontrada em /etc/environment"; exit 1
+  fi
+fi
+
 git clone https://github.com/fabichak/prompt-runner.git
 
 echo "Waiting for models to finish downloading..."
