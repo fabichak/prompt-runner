@@ -14,7 +14,6 @@ from datetime import datetime
 
 # Set up config before other imports
 import config
-from services.vast_utils import VastManager
 config.CLIENT_ID = str(uuid.uuid4())
 
 from services.runpod_utils import RunPodManager
@@ -195,7 +194,7 @@ def process_trello_jobs(args, logger) -> int:
 
             if not card:
                 logger.info("No cards found during polling window. Stopping.")
-                VastManager.shutdown_instance()
+                client.delete_machine()
 
         # Process the card
         try:

@@ -235,7 +235,7 @@ class UnifiedOrchestrator:
             logger.info(f"Queued prompt {prompt_id} for job {job.job_id}")
 
             # Wait for completion
-            success, _err = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=300)
+            success, _err = self.comfyui_client.wait_for_prompt_completion(prompt_id, timeout=500)
 
             if success:
                 logger.info(f"    ✓ Completed: {job.job_id}\nJob data:\n%s", json.dumps(job.to_dict(), indent=2, ensure_ascii=False))
