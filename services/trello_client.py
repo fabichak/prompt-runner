@@ -44,7 +44,8 @@ class TrelloApiClient:
         return payload.get("data")
 
     def delete_machine(self, timeout: int = 10):
-        payload = self._post_json("/api/vast/destroyMachine", timeout)
+        body: Dict[str, Any] = {}
+        payload = self._post_json("/api/vast/destroyMachine", body, timeout=timeout)
         if not payload.get("success"):
             raise RuntimeError(payload.get("error", {}).get("message", "Request failed"))
         return payload.get("data")
