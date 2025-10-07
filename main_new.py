@@ -16,7 +16,6 @@ from datetime import datetime
 import config
 config.CLIENT_ID = str(uuid.uuid4())
 
-from services.runpod_utils import RunPodManager
 from services.slackClient import SlackClient
 from services.unified_orchestrator import UnifiedOrchestrator
 from services.trello_client import TrelloApiClient
