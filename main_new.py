@@ -174,12 +174,6 @@ def process_trello_jobs(args, logger) -> int:
         if not card:
             if not args.continuous:
                 logger.info("No more cards to process. Exiting.")
-                try:
-                    client.delete_machine()
-                except Exception as e:
-                    logger.warning(f"Could not request machine deletion: {e}")
-                break
-
             logger.info(
                 f"No cards available. Polling for up to {max_poll_seconds}s "
                 f"(interval {poll_interval}s)..."
