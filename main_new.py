@@ -271,13 +271,13 @@ def main():
             return 1
 
         # Handle RunPod shutdown if requested
-        if exit_code == 0 and not args.no_shutdown:
-            try:
-                runpod = ServiceFactory.create_runpod_manager()
-                runpod.shutdown_current_pod()
-                logger.info("🔌 RunPod instance shutdown initiated")
-            except Exception as e:
-                logger.warning(f"Could not shutdown RunPod: {e}")
+        # if exit_code == 0 and not args.no_shutdown:
+        #     try:
+        #         runpod = ServiceFactory.create_runpod_manager()
+        #         runpod.shutdown_current_pod()
+        #         logger.info("🔌 RunPod instance shutdown initiated")
+        #     except Exception as e:
+        #         logger.warning(f"Could not shutdown RunPod: {e}")
 
         logger.info("✅ All operations completed")
         return exit_code

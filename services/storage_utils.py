@@ -68,6 +68,18 @@ class StorageManager:
         with open(filepath, 'w') as f:
             json.dump(workflow, f, indent=2, default=str, ensure_ascii=False)
         return str(filepath)
+
+    def cleanup_temp_folder(self):
+        """Clean up global temp folder used for transient artifacts (e.g., i2i)."""
+        logger.debug("cleanup_temp_folder")
+        output_dir = Path('output') / 'prompt-runner'
+        i2i_dir = Path('i2i-files')
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+            logger.info(f"Cleaned up temp folder {output_dir}")
+        if i2i_dir.exists():
+            shutil.rmtree(i2i_dir)
+            logger.info(f"Cleaned up temp folder {i2i_dir}")
         
     def upload_file_to_gcs(self, local_path: str, gcs_dest_path: str) -> bool:
         """Upload a single file to a GCS destination path using gsutil.
