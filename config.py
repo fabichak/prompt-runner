@@ -65,8 +65,11 @@ RETRY_DELAY = 5  # seconds
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
 
 I2I_IMAGE_RENDER_AMOUNT = 1  # Number of renders per CFG value
+I2I_CFG_VALUES = [2, 2.2, 2.4]
+
+I2I_IMAGE_RENDER_AMOUNT = 2  # Number of renders per CFG value
 I2I_SUPPORTED_IMAGE_FORMATS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
-I2I_EXCLUDED_FOLDERS = {'_old'}  # Folders to exclude from scanning
+I2I_EXCLUDED_FOLDERS = {'_old', 'todo'}  # Folders to exclude from scanning
 I2I_PROCESSED_FILE = "i2i_processed_images.txt"  # File to track processed images
 I2I_FAILED_FILE = "i2i_failed_images.txt"  # File to track failed images
 I2I_POLL_INTERVAL = 30  # Seconds between folder scans for new images

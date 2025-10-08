@@ -9,6 +9,8 @@ prompt_files/
 
 # C extensions
 *.so
+i2i_processed_images.txt
+i2i_failed_images.txt
 .serena/
 i2i-files/
 v2v-files/
