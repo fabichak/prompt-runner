@@ -74,28 +74,6 @@
       "title": "ModelSamplingSD3"
     }
   },
-  "81": {
-    "inputs": {
-      "frame_rate": 30,
-      "loop_count": 0,
-      "filename_prefix": "cat-1",
-      "format": "video/h264-mp4",
-      "pix_fmt": "yuv420p",
-      "crf": 0,
-      "save_metadata": true,
-      "trim_to_audio": false,
-      "pingpong": false,
-      "save_output": false,
-      "images": [
-        "130",
-        0
-      ]
-    },
-    "class_type": "VHS_VideoCombine",
-    "_meta": {
-      "title": "Video Combine 🎥🅥🅗🅢"
-    }
-  },
   "128": {
     "inputs": {
       "unet_name": "Wan2.2_T2V_Low_Noise_14B_VACE-Q8_0.gguf",
@@ -312,18 +290,6 @@
       "title": "🔧 Image Remove Background"
     }
   },
-  "176": {
-    "inputs": {
-      "frames": [
-        "177",
-        0
-      ]
-    },
-    "class_type": "Frame Set Reverse [DVB]",
-    "_meta": {
-      "title": "⮠ Frame Set Reverse"
-    }
-  },
   "177": {
     "inputs": {
       "first_frame_index": 0,
@@ -344,7 +310,7 @@
     "inputs": {
       "gap_mode": "BLEND",
       "frames": [
-        "176",
+        "177",
         0
       ]
     },
@@ -594,7 +560,7 @@
       "background": "Color",
       "background_color": "#ffffff",
       "image": [
-        "255",
+        "257",
         0
       ]
     },
@@ -653,6 +619,80 @@
     "class_type": "VHS_LoadImagePath",
     "_meta": {
       "title": "Load Image (Path) 🎥🅥🅗🅢"
+    }
+  },
+  "257": {
+    "inputs": {
+      "width": [
+        "162",
+        0
+      ],
+      "height": [
+        "163",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "stretch",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 2,
+      "device": "cpu",
+      "image": [
+        "255",
+        0
+      ]
+    },
+    "class_type": "ImageResizeKJv2",
+    "_meta": {
+      "title": "Resize Image v2"
+    }
+  },
+  "258": {
+    "inputs": {
+      "model": "u2net: general purpose",
+      "providers": "CUDA"
+    },
+    "class_type": "RemBGSession+",
+    "_meta": {
+      "title": "🔧 RemBG Session"
+    }
+  },
+  "259": {
+    "inputs": {
+      "rembg_session": [
+        "258",
+        0
+      ],
+      "image": [
+        "181",
+        0
+      ]
+    },
+    "class_type": "ImageRemoveBackground+",
+    "_meta": {
+      "title": "🔧 Image Remove Background"
+    }
+  },
+  "260": {
+    "inputs": {
+      "frame_rate": 30,
+      "loop_count": 0,
+      "filename_prefix": "nobg-",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 0,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "259",
+        0
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
     }
   }
 }

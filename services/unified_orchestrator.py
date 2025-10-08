@@ -262,6 +262,11 @@ class UnifiedOrchestrator:
                         logger.info(f"Google storage output path: {google_storage_output_path}")
                         google_storage_output_path = gcs_path.replace('gs://', 'https://storage.googleapis.com/') + job.get_artifact_filename()
                         logger.info(f"Google storage output path: {google_storage_output_path}")
+                        artifact_path_nobg = job.get_artifact_full_path()+'_nobg'
+                        logger.info(f"Artifact path (NO BG): " + artifact_path_nobg)
+                        if storage.upload_file_to_gcs(str(artifact_path_nobg), gcs_path):
+                            logger.info(f"Artifact path (NO BG): upload sucessful")
+                        
                 except Exception as e:
                     logger.warning(f"    Could not upload output to GCS: {e}")
 
