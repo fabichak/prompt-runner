@@ -35,7 +35,8 @@ class V2VWorkflowManager(BaseWorkflowManager):
         if str(NODE_LOAD_VIDEO_PATH) in workflow:
             workflow[str(NODE_LOAD_VIDEO_PATH)]["inputs"]["video"] = params['video_path']
             workflow[str(NODE_LOAD_VIDEO_PATH)]["inputs"]["frame_load_cap"] = params['total_frames']
-            workflow[str(NODE_LOAD_VIDEO_PATH)]["inputs"]["skip_first_frames"] = params['select_every_n_frames']
+            workflow[str(NODE_LOAD_VIDEO_PATH)]["inputs"]["skip_first_frames"] = params['start_frame']
+            workflow[str(NODE_LOAD_VIDEO_PATH)]["inputs"]["select_every_n_frames"] = params['select_every_n_frames']
 
         # Set reference image
         if str(NODE_REF_IMAGES) in workflow:
