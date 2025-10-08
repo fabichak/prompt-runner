@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 # Server Configuration
-SERVER_ADDRESS = "172.26.144.1:8188"
+SERVER_ADDRESS = "127.0.0.1:8188"
 CLIENT_ID = None  # Will be set at runtime
 
 # Workflow Files
@@ -39,24 +39,23 @@ GCS_BUCKET_PATH = "gs://aiof-saved-files/"
 
 # VIDEO
 FRAMES_TO_RENDER = 161  # Constant frames per chunk
-STEPS = 4
-VIDEO_WIDTH = 720
-VIDEO_HEIGHT = 1280
+VIDEO_WIDTH = 352
+VIDEO_HEIGHT = 624
 CONTEXT_OPTIONS_FRAMES = 220
 CONTEXT_OPTIONS_OVERLAP = 100
 
 
 # Node IDs for workflow modification
-NODE_WIDTH = "90"
-NODE_HEIGHT = "91"
-NODE_REF_IMAGES = "24"
-NODE_SAMPLES_54 = "104"
-NODE_START_FRAME = "348"
-NODE_VIDEO_COMBINE = "38"
-NODE_PROMPT_POS = "6"
-NODE_PROMPT_NEG = "7"
-NODE_LOAD_VIDEO_PATH = "17"
-NODE_CONTEXT_OPTIONS = "401"
+NODE_WIDTH = "162"
+NODE_HEIGHT = "163"
+NODE_SELECT_EVERY = "163"
+NODE_REF_IMAGES = "256"
+NODE_SAMPLER = "130"
+NODE_VIDEO_COMBINE = "184"
+NODE_VIDEO_COMBINE_NOBG = "258"
+NODE_PROMPT_POS = "132"
+NODE_PROMPT_NEG = "132"
+NODE_LOAD_VIDEO_PATH = "255"
 
 # Retry Configuration
 MAX_RETRIES = 3
@@ -65,6 +64,7 @@ RETRY_DELAY = 5  # seconds
 # RunPod Configuration
 DEFAULT_NO_SHUTDOWN = True  # Default is to NOT shutdown
 
+I2I_IMAGE_RENDER_AMOUNT = 1  # Number of renders per CFG value
 I2I_CFG_VALUES = [2, 2.2, 2.4]
 
 I2I_IMAGE_RENDER_AMOUNT = 2  # Number of renders per CFG value
@@ -77,3 +77,6 @@ I2I_POLL_INTERVAL = 30  # Seconds between folder scans for new images
 I2I_NODE_IMAGE_PATH = "365"
 I2I_NODE_OUTPUT = "53"
 I2I_SAMPLER_NODE = "334" 
+
+# External API Endpoints
+TRELLO_API_BASE_URL = "https://xxtria-prompt-scheduler-76618010335.us-central1.run.app"

@@ -21,6 +21,9 @@ class RenderJob:
     start_frame: int = 0
     seed: int = 0
     frames_to_render: int = 101
+    select_every_n_frames: int = 1
+    steps: int = 0
+    cfg: float = 0
     video_input_path: str = ""
     reference_image_path: str = ""
         
@@ -52,7 +55,10 @@ class RenderJob:
             'error_message': self.error_message,
             'retry_count': self.retry_count,
             'positive_prompt': self.positive_prompt,
-            'negative_prompt': self.negative_prompt
+            'negative_prompt': self.negative_prompt,
+            'steps': self.steps,
+            'cfg': self.cfg,
+            'select_every_n_frames': self.select_every_n_frames
         }
     
     @classmethod
@@ -70,58 +76,10 @@ class RenderJob:
         job.retry_count = data.get('retry_count', 0)
         job.positive_prompt = data.get('positive_prompt', '')
         job.negative_prompt = data.get('negative_prompt', '')
+        job.steps = data.get('steps', 0)
+        job.cfg = data.get('cfg', 0)
+        job.select_every_n_frames = data.get('select_every_n_frames', 1)
         return job
     
     def __str__(self) -> str:
         return f"RenderJob(#{self.job_number}, frames {self.start_frame}-{self.start_frame + self.frames_to_render})"
-
-
-# @dataclass
-# class CombineJob:
-#     """Represents a video combination job"""
-#     job_id: str = field(default_factory=lambda: str(uuid.uuid4()))
-#     combine_number: int = 0
-#     video_name: str = ""
-#     prompt_name: str = ""  # Session identifier for organizing files
-    
-#     # Input/output paths
-#     input_video_path: str = ""
-#     previous_combined_path: Optional[str] = None
-#     output_path: str = ""
-    
-#     # Status tracking
-#     status: JobStatus = JobStatus.PENDING
-#     error_message: Optional[str] = None
-#     retry_count: int = 0
-    
-#     def to_dict(self) -> Dict[str, Any]:
-#         """Convert to dictionary for serialization"""
-#         return {
-#             'job_id': self.job_id,
-#             'combine_number': self.combine_number,
-#             'video_name': self.video_name,
-#             'input_video_path': self.input_video_path,
-#             'previous_combined_path': self.previous_combined_path,
-#             'output_path': self.output_path,
-#             'status': self.status.value,
-#             'error_message': self.error_message,
-#             'retry_count': self.retry_count
-#         }
-    
-#     @classmethod
-#     def from_dict(cls, data: Dict[str, Any]) -> 'CombineJob':
-#         """Create from dictionary"""
-#         job = cls()
-#         job.job_id = data.get('job_id', str(uuid.uuid4()))
-#         job.combine_number = data.get('combine_number', 0)
-#         job.video_name = data.get('video_name', '')
-#         job.input_video_path = data.get('input_video_path', '')
-#         job.previous_combined_path = data.get('previous_combined_path')
-#         job.output_path = data.get('output_path', '')
-#         job.status = JobStatus(data.get('status', 'pending'))
-#         job.error_message = data.get('error_message')
-#         job.retry_count = data.get('retry_count', 0)
-#         return job
-    
-#     def __str__(self) -> str:
-#         return f"CombineJob(#{self.combine_number} for {self.video_name})"

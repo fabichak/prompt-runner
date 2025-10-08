@@ -1,4 +1,5 @@
 """ComfyUI WebSocket client for communication"""
+import requests
 import websocket
 from websocket import create_connection
 import json
@@ -6,10 +7,11 @@ import urllib.request
 import urllib.parse
 import uuid
 import time
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, List
 import logging
 
 from config import SERVER_ADDRESS, MAX_RETRIES, RETRY_DELAY
+from services.slackClient import SlackClient
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,7 @@ class ComfyUIClient:
         self.server_address = server_address
         self.client_id = str(uuid.uuid4())
         self.ws = None
+        self.slack_client = SlackClient()
         
     def connect(self) -> bool:
         """Establish WebSocket connection"""
@@ -29,10 +32,12 @@ class ComfyUIClient:
             # Use create_connection with timeout for RunPod environment stability
             self.ws = create_connection(ws_url, timeout=30)
             logger.info(f"Connected to ComfyUI server at {self.server_address}")
+            self.slack_client.send_message(f"Conectado ao servidor ComfyUI em {self.server_address}")
             return True
         except Exception as e:
             logger.error(f"Failed to connect to ComfyUI: {e}")
             logger.error(f"WebSocket URL: {ws_url}")
+            self.slack_client.send_message(f"Falha ao conectar ao servidor ComfyUI: {e}")
             return False
     
     def disconnect(self):
@@ -41,7 +46,8 @@ class ComfyUIClient:
             self.ws.close()
             self.ws = None
             logger.info("Disconnected from ComfyUI server")
-    
+            self.slack_client.send_message(f"Desconectado do servidor ComfyUI")
+
     def queue_prompt(self, workflow: Dict[str, Any], prompt_id: Optional[str] = None) -> Optional[str]:
         """Queue a workflow prompt for execution"""
         if not prompt_id:
@@ -63,24 +69,29 @@ class ComfyUIClient:
             with urllib.request.urlopen(req) as response:
                 result = json.loads(response.read())
                 logger.info(f"Queued prompt {prompt_id}")
+                self.slack_client.send_message(f"Prompt {prompt_id} enfileirado")
                 return prompt_id
                 
         except Exception as e:
             logger.error(f"Error queuing prompt: {e}")
+            self.slack_client.send_message(f"Erro ao enfileirar prompt: {e}")
             return None
     
     def wait_for_prompt_completion(self, prompt_id: str, timeout: int = 3600) -> Tuple[bool, Optional[str]]:
         """Wait for a specific prompt to finish execution"""
         if not self.ws:
             logger.error("WebSocket not connected")
+            self.slack_client.send_message(f"WebSocket não conectado")
             return False, "WebSocket not connected"
         
         logger.info(f"Waiting for prompt {prompt_id} to complete...")
+        self.slack_client.send_message(f"Aguardando a conclusão do prompt {prompt_id}...")
         start_time = time.time()
         
         while True:
             if time.time() - start_time > timeout:
                 logger.error(f"Timeout waiting for prompt {prompt_id}")
+                self.slack_client.send_message(f"Timeout aguardando a conclusão do prompt {prompt_id}")
                 return False, "Timeout"
             
             try:
@@ -92,12 +103,14 @@ class ComfyUIClient:
                         node_id = data['data'].get('node')
                         if node_id is None and data['data'].get('prompt_id') == prompt_id:
                             logger.info(f"Prompt {prompt_id} completed successfully")
+                            self.slack_client.send_message(f"Prompt {prompt_id} concluído com sucesso")
                             return True, None
                     
                     elif data.get('type') == 'execution_error':
                         if data['data'].get('prompt_id') == prompt_id:
                             error_msg = data['data'].get('exception_message', 'Unknown error')
                             logger.error(f"Prompt {prompt_id} failed: {error_msg}")
+                            self.slack_client.send_message(f"Prompt {prompt_id} falhou: {error_msg}")
                             return False, error_msg
                     
                     elif data.get('type') == 'progress':
@@ -106,14 +119,17 @@ class ComfyUIClient:
                             max_val = data['data'].get('max', 100)
                             node = data['data'].get('node')
                             logger.debug(f"Progress {node}: {value}/{max_val}")
+                            self.slack_client.send_message(f"Progresso {node}: {value}/{max_val}")
                             
             except websocket.WebSocketTimeoutException:
                 continue
             except websocket.WebSocketConnectionClosedException:
                 logger.error(f"WebSocket connection closed unexpectedly")
+                self.slack_client.send_message(f"Conexão WebSocket fechada inesperadamente")
                 return False, "Connection closed"
             except Exception as e:
                 logger.error(f"Error receiving message: {e}")
+                self.slack_client.send_message(f"Erro ao receber mensagem: {e}")
                 return False, str(e)
     
     def get_history(self, prompt_id: str) -> Optional[Dict[str, Any]]:
@@ -125,7 +141,45 @@ class ComfyUIClient:
                 return history.get(prompt_id)
         except Exception as e:
             logger.error(f"Error getting history for {prompt_id}: {e}")
+            self.slack_client.send_message(f"Erro ao obter histórico para {prompt_id}: {e}")
             return None
+
+    def get_prompt_outputs(self, prompt_id: str) -> List[Dict[str, str]]:
+        """Return list of output files for a completed prompt as URLs and metadata
+
+        Each item: { filename, subfolder, type, url }
+        """
+        outputs: List[Dict[str, str]] = []
+        history = self.get_history(prompt_id)
+        if not history:
+            return outputs
+
+        try:
+            items = history.get("outputs", {})
+            for _node, data in items.items():
+                logger.info(f"Data: {data}")
+                images = data.get("images") or []
+                for img in images:
+                    logger.info(f"Img: {img}")
+                    filename = img.get("filename", "")
+                    subfolder = img.get("subfolder", "")
+                    ftype = img.get("type", "output")
+                    # Build a direct view URL
+                    q_fn = urllib.parse.quote(filename)
+                    q_sf = urllib.parse.quote(subfolder)
+                    q_tp = urllib.parse.quote(ftype)
+                    url = f"http://{self.server_address}/view?filename={q_fn}&subfolder={q_sf}&type={q_tp}"
+                    outputs.append({
+                        "filename": filename,
+                        "subfolder": subfolder,
+                        "type": ftype,
+                        "url": url,
+                    })
+                    logger.info(f"Outputs: {outputs}")
+        except Exception as e:
+            logger.error(f"Error parsing outputs for {prompt_id}: {e}")
+            self.slack_client.send_message(f"Erro ao analisar saídas para {prompt_id}: {e}")
+        return outputs
     
     def interrupt_execution(self):
         """Interrupt current execution"""
@@ -137,8 +191,10 @@ class ComfyUIClient:
             )
             urllib.request.urlopen(req)
             logger.info("Interrupted execution")
+            self.slack_client.send_message(f"Interrupção da execução")
         except Exception as e:
             logger.error(f"Error interrupting execution: {e}")
+            self.slack_client.send_message(f"Erro ao interromper a execução: {e}")
     
     def get_queue_status(self) -> Optional[Dict[str, Any]]:
         """Get current queue status"""
@@ -148,6 +204,7 @@ class ComfyUIClient:
                 return json.loads(response.read())
         except Exception as e:
             logger.error(f"Error getting queue status: {e}")
+            self.slack_client.send_message(f"Erro ao obter status da fila: {e}")
             return None
     
     def clear_queue(self):
@@ -163,15 +220,18 @@ class ComfyUIClient:
             )
             urllib.request.urlopen(req)
             logger.info("Cleared execution queue")
+            self.slack_client.send_message(f"Fila de execução limpa")
         except Exception as e:
             logger.error(f"Error clearing queue: {e}")
-    
+            self.slack_client.send_message(f"Erro ao limpar a fila: {e}")
+
     def execute_with_retry(self, workflow: Dict[str, Any], max_retries: int = MAX_RETRIES) -> Tuple[bool, Optional[str], Optional[str]]:
         """Execute workflow with retry logic"""
         for attempt in range(max_retries):
             prompt_id = self.queue_prompt(workflow)
             if not prompt_id:
                 logger.warning(f"Failed to queue prompt, attempt {attempt + 1}/{max_retries}")
+                self.slack_client.send_message(f"Falha ao enfileirar prompt, tentativa {attempt + 1}/{max_retries}")
                 time.sleep(RETRY_DELAY)
                 continue
             
@@ -180,6 +240,7 @@ class ComfyUIClient:
                 return True, prompt_id, None
             
             logger.warning(f"Execution failed (attempt {attempt + 1}/{max_retries}): {error}")
+            self.slack_client.send_message(f"Execução falhou (tentativa {attempt + 1}/{max_retries}): {error}")
             if attempt < max_retries - 1:
                 time.sleep(RETRY_DELAY)
         

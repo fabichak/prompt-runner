@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
-Prompt Runner - Main entry point
-Video generation system using ComfyUI workflows
+Prompt Runner - Main entry point (Simplified with Unified Orchestrator)
+API-driven job processing system using ComfyUI workflows
 """
 
 import argparse
 import logging
 import sys
 import uuid
+import time
 from pathlib import Path
 from datetime import datetime
 
@@ -15,22 +16,21 @@ from datetime import datetime
 import config
 config.CLIENT_ID = str(uuid.uuid4())
 
-from models.prompt_data import PromptData
-from services.job_orchestrator import JobOrchestrator
+from services.slackClient import SlackClient
+from services.unified_orchestrator import UnifiedOrchestrator
+from services.trello_client import TrelloApiClient
 from services.service_factory import ServiceFactory
-from services.i2i_orchestrator import I2IOrchestrator
-from utils.file_parser import PromptFileParser
-from utils.job_planner import JobPlanner
+from services.mode_registry import ModeRegistry
 
 
 def setup_logging(log_level: str = "INFO", timestamp: str = None):
     """Set up logging configuration"""
     log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    
+
     # Determine log file location
     log_filename = f"prompt_runner_{timestamp}.log"
     log_filepath = Path(log_filename)
-    
+
     logging.basicConfig(
         level=getattr(logging, log_level.upper()),
         format=log_format,
@@ -39,77 +39,72 @@ def setup_logging(log_level: str = "INFO", timestamp: str = None):
             logging.FileHandler(str(log_filepath))
         ]
     )
-    
+
     return logging.getLogger(__name__)
 
 
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(
-        description="Prompt Runner - Video generation automation for ComfyUI"
+        description="Prompt Runner - API-driven job processing for ComfyUI"
     )
-    
-    # Mode selection
+
+    # Trello API processing
     parser.add_argument(
-        "--mode",
-        choices=["v2v", "i2i"],
-        default="v2v",
-        help="Operation mode: v2v (video-to-video) or i2i (image-to-image)"
+        "--trello",
+        action="store_true",
+        help="Process jobs from Trello API"
     )
-    
-    # Core arguments
+
+    # Continuous mode
     parser.add_argument(
-        "prompt_file",
-        nargs="?",
-        help="Path to prompt text file (optional if using --prompt-dir or --mode i2i)"
+        "--continuous",
+        action="store_true",
+        help="Run continuously, polling for new jobs"
     )
-    
+
     parser.add_argument(
-        "--prompt-dir",
-        type=str,
-        help="Directory containing prompt files to process"
-    )
-    
-    parser.add_argument(
-        "--resume",
-        type=str,
-        help="Resume from saved state file (provide promptName)"
-    )
-    
-    parser.add_argument(
-        "--start-at",
+        "--poll-interval",
         type=int,
-        default=0,
-        help="Start processing at this prompt index (for batch processing)"
+        default=15,
+        help="Polling interval in seconds (default: 15)"
     )
-    
+
+    parser.add_argument(
+        "--max-poll-seconds",
+        type=int,
+        default=600,
+        help="Maximum polling time in seconds (default: 600)"
+    )
+
+    # Dry run mode
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Simulate execution without actually processing"
+    )
+
+    # Error handling
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Continue processing even if a job fails"
+    )
+
     # RunPod control
     parser.add_argument(
         "--no-shutdown",
         action="store_true",
         help="Don't shutdown RunPod instance after completion"
     )
-    
+
     # Upload control
     parser.add_argument(
         "--no-upload",
         action="store_true",
-        help="Skip uploading to cloud storage"
+        help="Don't upload results to cloud storage"
     )
-    
-    parser.add_argument(
-        "--no-archive",
-        action="store_true",
-        help="Skip creating tar archives"
-    )
-    
-    # i2i mode specific arguments
-    parser.add_argument(
-        "--continuous",
-        action="store_true",
-        help="Continuously monitor for new images (i2i mode only)"
-    )
-    
+
     # Logging
     parser.add_argument(
         "--log-level",
@@ -117,249 +112,176 @@ def parse_arguments():
         default="INFO",
         help="Set logging level"
     )
-    
+
+    # Debug/Testing
     parser.add_argument(
-        "--full-logs",
+        "--test-api",
         action="store_true",
-        help="Show detailed output from all operations"
+        help="Test Trello API connection and exit"
     )
-    
-    args = parser.parse_args()
-    
-    # Validate arguments based on mode
-    if args.mode == "v2v":
-        if not args.prompt_file and not args.prompt_dir:
-            parser.error("Either prompt_file or --prompt-dir must be provided for v2v mode")
-    # i2i mode doesn't require prompt files
-    
-    return args
+
+    parser.add_argument(
+        "--list-modes",
+        action="store_true",
+        help="List available processing modes and exit"
+    )
+
+    return parser.parse_args()
 
 
-def process_single_prompt(prompt_data: PromptData, promptName: str, args) -> bool:
-    """Process a single prompt through the pipeline
-    
-    Args:
-        prompt_data: The prompt data to process
-        promptName: Name for organizing this prompt's files
-        args: Command line arguments
-        
-    Returns:
-        True if successful, False otherwise
-    """
-    logger = logging.getLogger(__name__)
-    
+def test_api_connection(logger):
+    """Test Trello API connection"""
     try:
-        # Create job orchestrator
-        orchestrator = JobOrchestrator()
-        
-        # Execute the pipeline
-        success = orchestrator.execute_full_pipeline(
-            prompt_data=prompt_data,
-            promptName=promptName,
-            resume_from_state=args.resume
-        )
-        
-        if success:
-            logger.info(f"✅ Successfully processed prompt: {promptName}")
-            
-            # Handle uploads if not disabled
-            if not args.no_upload:
-                storage = ServiceFactory.create_storage_manager()
-                                
-                # Upload to cloud storage
-                storage.zip_and_upload_output(promptName)
-                #storage.cleanup_intermediate_files(promptName)
-                logger.info(f"☁️ Uploaded to cloud storage")
+        client = TrelloApiClient(config.TRELLO_API_BASE_URL)
+        logger.info(f"Testing API connection to {config.TRELLO_API_BASE_URL}")
+
+        # Try to get next card (might be None)
+        card = client.get_next_card(timeout=10)
+
+        if card:
+            logger.info(f"✅ API connection successful. Found card: {card.get('cardName', 'Unknown')}")
         else:
-            logger.error(f"❌ Failed to process prompt: {promptName}")
-            
-        return success
-        
+            logger.info("✅ API connection successful. No cards available.")
+
+        return True
     except Exception as e:
-        logger.error(f"Error processing prompt {promptName}: {e}", exc_info=True)
+        logger.error(f"❌ API connection failed: {e}")
         return False
 
 
-def run_i2i_mode(args) -> int:
-    """Run the i2i image processing mode
-    
-    Args:
-        args: Command line arguments
-        
-    Returns:
-        0 for success, non-zero for failure
-    """
-    logger = logging.getLogger(__name__)
-    
-    logger.info("=" * 80)
-    logger.info("Starting I2I (Image-to-Image) Mode")
-    logger.info("=" * 80)
-    
-    try:
-                # Create and run i2i orchestrator
-        orchestrator = I2IOrchestrator()
-        
-        # Display configuration
-        status = orchestrator.get_status()
-        logger.info(f"CFG Values: {status['cfg_values']}")
-        logger.info(f"Renders per CFG: {status['renders_per_cfg']}")
-        logger.info(f"Continuous mode: {args.continuous}")
-        
-        # Run the orchestrator
-        orchestrator.run(continuous=args.continuous)
-        
-        # Final status
-        final_status = orchestrator.get_status()
-        logger.info("=" * 80)
-        logger.info("I2I Processing Complete")
-        logger.info(f"Processed: {final_status['processed']} images")
-        logger.info(f"Failed: {final_status['failed']} images")
-        logger.info(f"Pending: {final_status['pending']} images")
-        logger.info("=" * 80)
-        
-        return 0
-        
-    except Exception as e:
-        logger.error(f"Error in i2i mode: {e}", exc_info=True)
-        return 1
+def process_trello_jobs(args, logger) -> int:
+    """Main processing loop for API jobs"""
+    orchestrator = UnifiedOrchestrator()
+    client = TrelloApiClient(config.TRELLO_API_BASE_URL)
+    slack_client = SlackClient()
 
+    poll_interval = 15
+    max_poll_seconds = 600
+    jobs_processed = 0
 
-def process_prompt_directory(prompt_dir: Path, args) -> int:
-    """Process all prompt files in a directory
-    
-    Args:
-        prompt_dir: Directory containing prompt files
-        args: Command line arguments
-        
-    Returns:
-        Number of successfully processed prompts
-    """
-    logger = logging.getLogger(__name__)
-    
-    # Find all .txt files in directory
-    prompt_files = sorted(prompt_dir.glob("*.txt"))
-    
-    if not prompt_files:
-        logger.warning(f"No prompt files found in {prompt_dir}")
-        return 0
-    
-    logger.info(f"Found {len(prompt_files)} prompt files")
-    
-    # Apply start-at offset
-    if args.start_at > 0:
-        logger.info(f"Starting at prompt index {args.start_at}")
-        prompt_files = prompt_files[args.start_at:]
-    
-    successful = 0
-    failed = 0
-    
-    for idx, prompt_file in enumerate(prompt_files, start=args.start_at):
-        logger.info("=" * 80)
-        logger.info(f"Processing prompt {idx + 1}: {prompt_file.name}")
-        logger.info("=" * 80)
-        
+    logger.info(f"Starting Trello job processing (continuous={args.continuous})")
+
+    while True:
+        card = None
         try:
-            # Parse prompt file
-            prompt_data = PromptFileParser.parse_prompt_file(Path(prompt_file))
-            
-            # Generate promptName from filename
-            promptName = prompt_file.stem
-            
-            # Process the prompt
-            if process_single_prompt(prompt_data, promptName, args):
-                successful += 1
-            else:
-                failed += 1
-                
+            # Get next job from API
+            logger.debug("Fetching next card from Trello API")
+            card = client.get_next_card()
         except Exception as e:
-            logger.error(f"Failed to process {prompt_file}: {e}")
-            failed += 1
-    
-    logger.info("=" * 80)
-    logger.info(f"Batch processing complete: {successful} successful, {failed} failed")
-    
-    return successful
+            logger.warning(f"Error fetching next Trello card: {e}")
+            card = None
+
+        if not card:
+            if not args.continuous:
+                logger.info("No more cards to process. Exiting.")
+            logger.info(
+                f"No cards available. Polling for up to {max_poll_seconds}s "
+                f"(interval {poll_interval}s)..."
+            )
+
+            deadline = time.time() + max_poll_seconds
+
+            while time.time() < deadline and not card:
+                time.sleep(poll_interval)
+                try:
+                    logger.info("Polling for next card from Trello API")
+                    card = client.get_next_card()
+                except Exception as e:
+                    logger.warning(f"Polling error: {e}")
+                    slack_client.send_message(f"Erro ao buscar card: {e}")
+
+            if not card:
+                logger.info("No cards found during polling window. Stopping.")
+                try:
+                    client.delete_machine()
+                except Exception as e:
+                    logger.warning(f"Could not request machine deletion: {e}")
+                break
+
+        # Process the card
+        try:
+            card_name = card.get('cardName', 'Unknown')
+            logger.info(f"Processing card: {card_name}")
+
+            result = orchestrator.process_api_job(card, dry_run=args.dry_run)
+
+            if result['status'] == 'completed':
+                jobs_processed += 1
+                logger.info(f"✅ Successfully processed: {card_name}")
+            elif result['status'] == 'dry_run':
+                logger.info(f"🔧 Dry run completed: {card_name}")
+            else:
+                logger.error(f"❌ Failed to process: {card_name} - {result.get('error')}")
+                if not args.continue_on_error:
+                    logger.warning("Stopping due to error (use --continue-on-error to continue)")
+                    break
+
+        except Exception as e:
+            logger.error(f"Error processing card: {e}", exc_info=True)
+            if not args.continue_on_error:
+                break
+
+    # Print summary
+    status = orchestrator.get_status()
+    logger.info("=" * 60)
+    logger.info("Processing Summary:")
+    logger.info(f"  Completed: {status['completed_jobs']} jobs")
+    logger.info(f"  Failed: {status['failed_jobs']} jobs")
+    logger.info(f"  Total processed: {jobs_processed} cards")
+    logger.info("=" * 60)
+
+    return 0 if status['failed_jobs'] == 0 else 1
 
 
 def main():
     """Main entry point"""
     # Generate timestamp for this run
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    
+
     # Parse arguments
     args = parse_arguments()
-    
+
     # Set up logging
     logger = setup_logging(args.log_level, timestamp)
-    
+
     logger.info("=" * 80)
-    logger.info("PROMPT RUNNER - Video Generation System")
+    logger.info("PROMPT RUNNER - Unified Job Processing System")
     logger.info("=" * 80)
     logger.info(f"Session ID: {config.CLIENT_ID}")
     logger.info(f"Timestamp: {timestamp}")
-    logger.info(f"Mode: {args.mode.upper()}")
-    
+    logger.info(f"Available modes: {', '.join(ModeRegistry.get_available_modes())}")
+
     try:
-        # Route based on mode
-        if args.mode == "i2i":
-            # Run i2i mode
-            return run_i2i_mode(args)
-        
-        # Otherwise run v2v mode
-        # Process based on input mode
-        if args.prompt_dir:
-            # Batch processing mode
-            prompt_dir = Path(args.prompt_dir)
-            if not prompt_dir.exists():
-                logger.error(f"Directory not found: {prompt_dir}")
-                return 1
-            
-            successful = process_prompt_directory(prompt_dir, args)
-            
-            if successful == 0:
-                logger.error("No prompts were successfully processed")
-                return 1
-                
+        # Handle special commands
+        if args.list_modes:
+            print("\nAvailable processing modes:")
+            for mode in ModeRegistry.get_available_modes():
+                print(f"  - {mode}")
+            return 0
+
+        if args.test_api:
+            return 0 if test_api_connection(logger) else 1
+
+        # Main processing
+        if args.trello:
+            exit_code = process_trello_jobs(args, logger)
         else:
-            # Single prompt mode
-            prompt_file = Path(args.prompt_file)
-            if not prompt_file.exists():
-                logger.error(f"Prompt file not found: {prompt_file}")
-                return 1
-            
-            # Parse the prompt file
-            parser = PromptFileParser(str(prompt_file))
-            prompt_data = parser.parse()
-            
-            # Generate promptName from filename
-            promptName = prompt_file.stem
-            
-            logger.info(f"Processing: {prompt_data.video_name}")
-            logger.info(f"Total frames: {prompt_data.total_frames}")
-            
-            # Calculate job sequence for preview
-            job_planner = JobPlanner(promptName)
-            render_jobs, combine_jobs = job_planner.calculate_job_sequence(prompt_data)
-            
-            logger.info(f"Will create {len(render_jobs)} render jobs and {len(combine_jobs)} combine jobs")
-            
-            # Process the prompt
-            if not process_single_prompt(prompt_data, promptName, args):
-                logger.error("Failed to process prompt")
-                return 1
-        
+            logger.error("Please use --trello flag to process jobs from API")
+            logger.info("Example: python main.py --trello --continuous")
+            return 1
+
         # Handle RunPod shutdown if requested
-        if not args.no_shutdown:
-            try:
-                runpod = ServiceFactory.create_runpod_manager()
-                runpod.shutdown_current_pod()
-                logger.info("🔌 RunPod instance shutdown initiated")
-            except Exception as e:
-                logger.warning(f"Could not shutdown RunPod: {e}")
-        
-        logger.info("✅ All operations completed successfully")
-        return 0
-        
+        # if exit_code == 0 and not args.no_shutdown:
+        #     try:
+        #         runpod = ServiceFactory.create_runpod_manager()
+        #         runpod.shutdown_current_pod()
+        #         logger.info("🔌 RunPod instance shutdown initiated")
+        #     except Exception as e:
+        #         logger.warning(f"Could not shutdown RunPod: {e}")
+
+        logger.info("✅ All operations completed")
+        return exit_code
+
     except KeyboardInterrupt:
         logger.info("⚠️ Interrupted by user")
         return 130

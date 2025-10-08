@@ -1,0 +1,177 @@
+"""Video-to-video job model"""
+from dataclasses import dataclass
+from typing import Dict, Any, Optional, List
+import random
+import logging
+
+from models.base_job import BaseJob, JobStatus
+from services.service_factory import ServiceFactory
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class V2VJob(BaseJob):
+    """Video-to-video rendering job"""
+    video_path: str
+    reference_image_path: str
+    positive_prompt: str
+    negative_prompt: str
+    start_frame: int = 0
+    total_frames: int = 101
+    select_every_n_frames: int = 1
+    seed: int = 0
+    steps: int = 0
+    cfg: float = 0.0
+    video_output_filename: str = None
+    video_output_path: str = None
+    video_output_full_path: str = None
+
+    @classmethod
+    def from_api_data(cls, api_data: Dict[str, Any]) -> "V2VJob":
+        """Create V2V job from Trello/API data (simple mapping)."""
+
+        storage = ServiceFactory.create_storage_manager()
+
+        # Core fields (prefer your Trello keys, fall back to a couple common aliases)
+        video_path = (
+            api_data.get("videoSource")
+            or api_data.get("videoPath")
+            or api_data.get("videoUrl")
+        )
+        reference_image_path = (
+            api_data.get("imageReference")
+            or api_data.get("imagePath")
+            or api_data.get("imageUrl")
+        )
+
+        positive_prompt = (
+            api_data.get("positivePrompt")
+            or api_data.get("description")
+            or api_data.get("prompt")
+            or ""
+        )
+        negative_prompt = api_data.get("negativePrompt") or ""
+
+        # Light casting helpers
+        def as_int(v, default):
+            try:
+                return int(v)
+            except (TypeError, ValueError):
+                return default
+        def as_float(v, default):
+            try:
+                return float(v)
+            except (TypeError, ValueError):
+                return default
+
+        def first_present(d: Dict[str, Any], keys: list[str]):
+            for k in keys:
+                if k in d and d.get(k) is not None:
+                    return d.get(k)
+            return None
+
+        start_frame = as_int(api_data.get("startFrame"), 0)
+        total_frames = as_int(api_data.get("totalFrames"), 101)
+        select_every_n_frames = as_int(api_data.get("everyFrames"), 1)
+        # Accept multiple aliases from the card for steps/cfg
+        steps_aliases = [
+            "steps", "samplerSteps", "numSteps", "numInferenceSteps",
+            "samplingSteps", "sdSteps"
+        ]
+        cfg_aliases = [
+            "cfg", "cfgScale", "guidance", "cfg_value", "cfgScaleValue"
+        ]
+
+        steps_val = first_present(api_data, steps_aliases)
+        cfg_val = first_present(api_data, cfg_aliases)
+
+        steps = as_int(steps_val, 0)
+        cfg = as_float(cfg_val, 0.0)
+
+        # Seed (random if not provided / invalid)
+        try:
+            seed = int(api_data.get("seed"))
+        except (TypeError, ValueError):
+            seed = random.randint(0, 2**32 - 1)
+
+        video_output_filename = f"{api_data.get('cardId')}_{seed}"
+        video_output_path=storage.get_video_path(api_data.get("cardId"), video_output_filename)
+        video_output_full_path=storage.get_video_full_path(api_data.get("cardId"), video_output_filename)
+
+        return cls(
+            job_id=api_data.get("jobId", api_data.get("cardId")),
+            card_id=api_data.get("cardId"),
+            mode="v2v",
+            video_path=video_path,
+            reference_image_path=reference_image_path,
+            positive_prompt=positive_prompt,
+            negative_prompt=negative_prompt,
+            start_frame=start_frame,
+            total_frames=total_frames,
+            select_every_n_frames=select_every_n_frames,
+            seed=seed,
+            steps=steps,
+            cfg=cfg,
+            video_output_filename=video_output_filename,
+            video_output_path=video_output_path,
+            video_output_full_path=video_output_full_path
+        )
+
+    def to_workflow_params(self) -> Dict[str, Any]:
+        return {
+            "video_path": str(self.video_path),
+            "image_path": str(self.reference_image_path),
+            "positive_prompt": self.positive_prompt,
+            "negative_prompt": self.negative_prompt,
+            "seed": self.seed,
+            "steps": self.steps,
+            "cfg": self.cfg,
+            "total_frames": self.total_frames,
+            "start_frame": self.start_frame,
+            "select_every_n_frames": self.select_every_n_frames,
+            "output_path": str(self.video_output_path),
+        }
+    
+    def get_artifact_filename(self) -> str:
+        return f"job_{self.card_id}_{self.seed}_00001.mp4"
+
+    def get_artifact_full_path(self) -> str:
+        return self.video_output_full_path
+
+    def validate(self) -> bool:
+        if not self.video_path:
+            logger.error("Video path is required")
+            return False
+        if not self.reference_image_path:
+            logger.error("Reference image path is required")
+            return False
+        if self.total_frames <= 0:
+            logger.error(f"Invalid total_frames: {self.total_frames}")
+            return False
+        if self.start_frame < 0:
+            logger.error(f"Invalid start_frame: {self.start_frame}")
+            return False
+        if self.select_every_n_frames <= 0:
+            logger.error(f"Invalid select_every_n_frames: {self.select_every_n_frames}")
+            return False
+        return True
+
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        base_dict.update({
+            "video_path": str(self.video_path),
+            "reference_image_path": str(self.reference_image_path),
+            "positive_prompt": self.positive_prompt,
+            "negative_prompt": self.negative_prompt,
+            "start_frame": self.start_frame,
+            "total_frames": self.total_frames,
+            "select_every_n_frames": self.select_every_n_frames,
+            "seed": self.seed,
+            "video_output_path": str(self.video_output_path),
+            "video_output_full_path": str(self.video_output_full_path),
+        })
+        return base_dict
+
+    def __str__(self) -> str:
+        return f"V2VJob({self.job_id}, frames {self.start_frame}-{self.start_frame + self.total_frames})"
