@@ -80,7 +80,7 @@ class UnifiedOrchestrator:
                     result=False,
                     message=error_msg
                 )
-                # storage.cleanup_temp_folder()
+                storage.cleanup_temp_folder()
                 return {'status': 'failed', 'error': error_msg}
 
             if dry_run:
@@ -110,7 +110,7 @@ class UnifiedOrchestrator:
                 result=True,
                 message=result.google_storage_output_path
             )
-            # storage.cleanup_temp_folder()
+            storage.cleanup_temp_folder()
 
             return {
                 'status': 'completed',
@@ -129,7 +129,7 @@ class UnifiedOrchestrator:
                         result=False,
                         message=str(e)
                     )
-                    # storage.cleanup_temp_folder()
+                    storage.cleanup_temp_folder()
                 except Exception as api_error:
                     logger.error(f"Failed to report error to API: {api_error}")
 
