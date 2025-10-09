@@ -129,32 +129,7 @@ echo "Fixing ComfyUI custom nodes..."
 echo "----------------------------------------"
 python ComfyUI/custom_nodes/comfyui-manager/cm-cli.py fix all || echo "Fix completed with warnings"
 
-# Preserva o valor vindo do docker (-e) contra override vazio do .env
-_orig_slack="${SLACK_WEBHOOK_URL:-}"
-if [ -f .env ]; then
-  set -a
-  . .env
-  set +a
-fi
-if [ -n "${_orig_slack:-}" ] && [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
-  export SLACK_WEBHOOK_URL="$_orig_slack"
-fi
-
-# Se ainda estiver vazio, tenta /etc/environment
-if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
-  if grep -q '^SLACK_WEBHOOK_URL=' /etc/environment 2>/dev/null; then
-    # extrai o valor (com ou sem aspas) sem imprimir o segredo
-    _v="$(grep -m1 '^SLACK_WEBHOOK_URL=' /etc/environment | sed -E 's/^SLACK_WEBHOOK_URL="?([^"]*)"?$/\1/')"
-    if [ -n "${_v:-}" ]; then
-      export SLACK_WEBHOOK_URL="$_v"
-      unset _v
-    else
-      echo "ERRO: SLACK_WEBHOOK_URL vazia em /etc/environment"; exit 1
-    fi
-  else
-    echo "ERRO: SLACK_WEBHOOK_URL não encontrada em /etc/environment"; exit 1
-  fi
-fi
+source .env
 
 git clone https://github.com/fabichak/prompt-runner.git
 
