@@ -43,6 +43,9 @@ class SlackClient:
 
         self._initialized = True
 
+        if not self.webhook_url:
+            logger.warning("SLACK_WEBHOOK_URL not set; Slack sending is disabled. Will log batches locally.")
+
     def send_message(self, text: str) -> None:
         """Queue a message to be sent on the next flush cycle."""
         if not text:
@@ -83,9 +86,26 @@ class SlackClient:
                 headers={"Content-Type": "application/json"},
                 timeout=10,
             )
-            resp.raise_for_status()
+            try:
+                resp.raise_for_status()
+            except requests.HTTPError as http_err:
+                body = None
+                try:
+                    body = resp.text
+                except Exception:
+                    body = None
+                logger.error(
+                    f"Slack HTTP error: status={resp.status_code} body={body} error={http_err}"
+                )
         except Exception as e:
             logger.error(f"Error sending batched Slack message: {e}")
+
+    def flush_now(self) -> None:
+        """Force immediate flush of the current buffer."""
+        try:
+            self._flush()
+        except Exception as e:
+            logger.error(f"Error on flush_now: {e}")
 
     def close(self) -> None:
         """Stop background thread and flush any remaining messages."""
